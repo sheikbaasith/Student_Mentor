@@ -10,9 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Trash2, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Trash2, Loader2, ChevronDown, ChevronUp, Eye } from "lucide-react";
 import { Student, useStudents } from "@/hooks/useStudents";
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Collapsible,
   CollapsibleContent,
@@ -39,6 +40,7 @@ const predictionLabels = {
 export function StudentTable({ students, isLoading }: StudentTableProps) {
   const { deleteStudent, isDeleting } = useStudents();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const getInitials = (name: string) => {
     return name
@@ -188,15 +190,25 @@ export function StudentTable({ students, isLoading }: StudentTableProps) {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => deleteStudent(student.id)}
-                      disabled={isDeleting}
-                      className="text-muted-foreground hover:text-danger"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => navigate(`/student/${student.id}`)}
+                        className="text-muted-foreground hover:text-primary"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => deleteStudent(student.id)}
+                        disabled={isDeleting}
+                        className="text-muted-foreground hover:text-danger"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
                 <CollapsibleContent asChild>
