@@ -8,24 +8,14 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-
-export interface Student {
-  id: string;
-  name: string;
-  email: string;
-  grade: number;
-  attendance: number;
-  prediction: "excelling" | "on-track" | "at-risk";
-  confidence: number;
-  subjects: {
-    name: string;
-    score: number;
-  }[];
-}
+import { Trash2, Loader2 } from "lucide-react";
+import { Student, useStudents } from "@/hooks/useStudents";
 
 interface StudentTableProps {
   students: Student[];
+  isLoading?: boolean;
 }
 
 const predictionStyles = {
@@ -40,7 +30,9 @@ const predictionLabels = {
   "at-risk": "At Risk",
 };
 
-export function StudentTable({ students }: StudentTableProps) {
+export function StudentTable({ students, isLoading }: StudentTableProps) {
+  const { deleteStudent, isDeleting } = useStudents();
+
   const getInitials = (name: string) => {
     return name
       .split(" ")
@@ -55,6 +47,25 @@ export function StudentTable({ students }: StudentTableProps) {
     if (grade >= 60) return "text-warning font-semibold";
     return "text-danger font-semibold";
   };
+
+  if (isLoading) {
+    return (
+      <div className="rounded-xl border bg-card card-shadow p-12 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (students.length === 0) {
+    return (
+      <div className="rounded-xl border bg-card card-shadow p-12 text-center animate-slide-up">
+        <p className="text-lg font-medium">No students yet</p>
+        <p className="text-muted-foreground mt-1">
+          Add your first student to start tracking performance
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="rounded-xl border bg-card card-shadow overflow-hidden animate-slide-up">
@@ -72,13 +83,14 @@ export function StudentTable({ students }: StudentTableProps) {
             <TableHead className="font-semibold">Attendance</TableHead>
             <TableHead className="font-semibold">AI Prediction</TableHead>
             <TableHead className="font-semibold">Confidence</TableHead>
+            <TableHead className="font-semibold w-12"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {students.map((student, index) => (
             <TableRow
               key={student.id}
-              className="hover:bg-muted/30 transition-colors cursor-pointer"
+              className="hover:bg-muted/30 transition-colors"
               style={{ animationDelay: `${index * 50}ms` }}
             >
               <TableCell>
@@ -140,6 +152,17 @@ export function StudentTable({ students }: StudentTableProps) {
                     {student.confidence}%
                   </span>
                 </div>
+              </TableCell>
+              <TableCell>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => deleteStudent(student.id)}
+                  disabled={isDeleting}
+                  className="text-muted-foreground hover:text-danger"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </TableCell>
             </TableRow>
           ))}
