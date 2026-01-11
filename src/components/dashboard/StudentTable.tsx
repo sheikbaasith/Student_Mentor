@@ -10,8 +10,14 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Trash2, Loader2 } from "lucide-react";
+import { Trash2, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { Student, useStudents } from "@/hooks/useStudents";
+import { useState } from "react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 interface StudentTableProps {
   students: Student[];
@@ -32,6 +38,7 @@ const predictionLabels = {
 
 export function StudentTable({ students, isLoading }: StudentTableProps) {
   const { deleteStudent, isDeleting } = useStudents();
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const getInitials = (name: string) => {
     return name
@@ -46,6 +53,11 @@ export function StudentTable({ students, isLoading }: StudentTableProps) {
     if (grade >= 70) return "text-accent font-semibold";
     if (grade >= 60) return "text-warning font-semibold";
     return "text-danger font-semibold";
+  };
+
+  const formatDate = (date: string | null) => {
+    if (!date) return "N/A";
+    return new Date(date).toLocaleDateString();
   };
 
   if (isLoading) {
@@ -78,7 +90,9 @@ export function StudentTable({ students, isLoading }: StudentTableProps) {
       <Table>
         <TableHeader>
           <TableRow className="bg-muted/50">
+            <TableHead className="font-semibold w-8"></TableHead>
             <TableHead className="font-semibold">Student</TableHead>
+            <TableHead className="font-semibold">Roll No</TableHead>
             <TableHead className="font-semibold">Current Grade</TableHead>
             <TableHead className="font-semibold">Attendance</TableHead>
             <TableHead className="font-semibold">AI Prediction</TableHead>
@@ -88,83 +102,133 @@ export function StudentTable({ students, isLoading }: StudentTableProps) {
         </TableHeader>
         <TableBody>
           {students.map((student, index) => (
-            <TableRow
+            <Collapsible
               key={student.id}
-              className="hover:bg-muted/30 transition-colors"
-              style={{ animationDelay: `${index * 50}ms` }}
+              open={expandedId === student.id}
+              onOpenChange={(open) => setExpandedId(open ? student.id : null)}
+              asChild
             >
-              <TableCell>
-                <div className="flex items-center gap-3">
-                  <Avatar className="h-10 w-10 border-2 border-primary/10">
-                    <AvatarFallback className="bg-primary/5 text-primary font-medium">
-                      {getInitials(student.name)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium">{student.name}</p>
-                    <p className="text-sm text-muted-foreground">{student.email}</p>
-                  </div>
-                </div>
-              </TableCell>
-              <TableCell>
-                <span className={getGradeColor(student.grade)}>{student.grade}%</span>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
-                    <div
+              <>
+                <TableRow
+                  className="hover:bg-muted/30 transition-colors"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
+                  <TableCell>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-6 w-6">
+                        {expandedId === student.id ? (
+                          <ChevronUp className="h-4 w-4" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </CollapsibleTrigger>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-10 w-10 border-2 border-primary/10">
+                        <AvatarFallback className="bg-primary/5 text-primary font-medium">
+                          {getInitials(student.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{student.name}</p>
+                        <p className="text-sm text-muted-foreground">{student.email}</p>
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-sm font-medium">{student.roll_no || "N/A"}</span>
+                  </TableCell>
+                  <TableCell>
+                    <span className={getGradeColor(student.grade)}>{student.grade}%</span>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={cn(
+                            "h-full rounded-full transition-all",
+                            student.attendance >= 90
+                              ? "bg-success"
+                              : student.attendance >= 75
+                              ? "bg-accent"
+                              : "bg-warning"
+                          )}
+                          style={{ width: `${student.attendance}%` }}
+                        />
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {student.attendance}%
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant="outline"
                       className={cn(
-                        "h-full rounded-full transition-all",
-                        student.attendance >= 90
-                          ? "bg-success"
-                          : student.attendance >= 75
-                          ? "bg-accent"
-                          : "bg-warning"
+                        "font-medium transition-colors",
+                        predictionStyles[student.prediction]
                       )}
-                      style={{ width: `${student.attendance}%` }}
-                    />
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    {student.attendance}%
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "font-medium transition-colors",
-                    predictionStyles[student.prediction]
-                  )}
-                >
-                  {predictionLabels[student.prediction]}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
-                  <div className="w-12 h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full"
-                      style={{ width: `${student.confidence}%` }}
-                    />
-                  </div>
-                  <span className="text-sm text-muted-foreground">
-                    {student.confidence}%
-                  </span>
-                </div>
-              </TableCell>
-              <TableCell>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => deleteStudent(student.id)}
-                  disabled={isDeleting}
-                  className="text-muted-foreground hover:text-danger"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </TableCell>
-            </TableRow>
+                    >
+                      {predictionLabels[student.prediction]}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <div className="w-12 h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-primary rounded-full"
+                          style={{ width: `${student.confidence}%` }}
+                        />
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {student.confidence}%
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => deleteStudent(student.id)}
+                      disabled={isDeleting}
+                      className="text-muted-foreground hover:text-danger"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+                <CollapsibleContent asChild>
+                  <TableRow className="bg-muted/20">
+                    <TableCell colSpan={8} className="py-4">
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 px-4">
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wide">Date of Birth</p>
+                          <p className="font-medium mt-1">{formatDate(student.date_of_birth)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wide">Blood Group</p>
+                          <p className="font-medium mt-1">{student.blood_group || "N/A"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wide">Internal Marks</p>
+                          <p className="font-medium mt-1">{student.internal_marks}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wide">External Marks</p>
+                          <p className="font-medium mt-1">{student.external_marks}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Marks</p>
+                          <p className="font-medium mt-1">{student.internal_marks + student.external_marks}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                </CollapsibleContent>
+              </>
+            </Collapsible>
           ))}
         </TableBody>
       </Table>

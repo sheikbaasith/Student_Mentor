@@ -47,37 +47,52 @@ export type Database = {
       students: {
         Row: {
           attendance: number
+          blood_group: string | null
           confidence: number
           created_at: string
+          date_of_birth: string | null
           email: string
+          external_marks: number | null
           grade: number
           id: string
+          internal_marks: number | null
           name: string
           prediction: string
+          roll_no: string | null
           teacher_id: string
           updated_at: string
         }
         Insert: {
           attendance?: number
+          blood_group?: string | null
           confidence?: number
           created_at?: string
+          date_of_birth?: string | null
           email: string
+          external_marks?: number | null
           grade?: number
           id?: string
+          internal_marks?: number | null
           name: string
           prediction?: string
+          roll_no?: string | null
           teacher_id: string
           updated_at?: string
         }
         Update: {
           attendance?: number
+          blood_group?: string | null
           confidence?: number
           created_at?: string
+          date_of_birth?: string | null
           email?: string
+          external_marks?: number | null
           grade?: number
           id?: string
+          internal_marks?: number | null
           name?: string
           prediction?: string
+          roll_no?: string | null
           teacher_id?: string
           updated_at?: string
         }
