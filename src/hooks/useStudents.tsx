@@ -12,6 +12,11 @@ export interface Student {
   attendance: number;
   prediction: "excelling" | "on-track" | "at-risk";
   confidence: number;
+  date_of_birth: string | null;
+  blood_group: string | null;
+  roll_no: string | null;
+  internal_marks: number;
+  external_marks: number;
   created_at: string;
   updated_at: string;
 }
@@ -21,6 +26,11 @@ export interface NewStudent {
   email: string;
   grade: number;
   attendance: number;
+  date_of_birth?: string;
+  blood_group?: string;
+  roll_no?: string;
+  internal_marks?: number;
+  external_marks?: number;
   prediction?: "excelling" | "on-track" | "at-risk";
   confidence?: number;
 }
@@ -72,6 +82,11 @@ export function useStudents() {
           email: student.email,
           grade: student.grade,
           attendance: student.attendance,
+          date_of_birth: student.date_of_birth || null,
+          blood_group: student.blood_group || null,
+          roll_no: student.roll_no || null,
+          internal_marks: student.internal_marks || 0,
+          external_marks: student.external_marks || 0,
           prediction,
           confidence,
         })
