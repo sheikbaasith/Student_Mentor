@@ -1,3 +1,4 @@
+import { forwardRef, useState } from "react";
 import {
   Table,
   TableBody,
@@ -12,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Trash2, Loader2, ChevronDown, ChevronUp, Eye } from "lucide-react";
 import { Student, useStudents } from "@/hooks/useStudents";
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Collapsible,
@@ -23,6 +23,7 @@ import {
 interface StudentTableProps {
   students: Student[];
   isLoading?: boolean;
+  className?: string;
 }
 
 const predictionStyles = {
@@ -37,10 +38,11 @@ const predictionLabels = {
   "at-risk": "At Risk",
 };
 
-export function StudentTable({ students, isLoading }: StudentTableProps) {
-  const { deleteStudent, isDeleting } = useStudents();
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const navigate = useNavigate();
+export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
+  ({ students, isLoading, className }, ref) => {
+    const { deleteStudent, isDeleting } = useStudents();
+    const [expandedId, setExpandedId] = useState<string | null>(null);
+    const navigate = useNavigate();
 
   const getInitials = (name: string) => {
     return name
@@ -246,4 +248,7 @@ export function StudentTable({ students, isLoading }: StudentTableProps) {
       </Table>
     </div>
   );
-}
+  }
+);
+
+StudentTable.displayName = "StudentTable";

@@ -7,6 +7,12 @@ import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import StudentDetail from "./pages/StudentDetail";
+import Students from "./pages/Students";
+import Analytics from "./pages/Analytics";
+import Predictions from "./pages/Predictions";
+import Courses from "./pages/Courses";
+import Reports from "./pages/Reports";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,6 +27,12 @@ const App = () => (
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/students" element={<Students />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/predictions" element={<Predictions />} />
+            <Route path="/courses" element={<Courses />} />
+            <Route path="/reports" element={<Reports />} />
+            <Route path="/settings" element={<Settings />} />
             <Route path="/student/:id" element={<StudentDetail />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

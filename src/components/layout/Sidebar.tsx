@@ -8,19 +8,19 @@ import {
   FileText,
   GraduationCap,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { NavLink } from "react-router-dom";
 
 interface SidebarProps {
   className?: string;
 }
 
 const navItems = [
-  { icon: LayoutDashboard, label: "Dashboard", active: true },
-  { icon: Users, label: "Students", active: false },
-  { icon: BarChart3, label: "Analytics", active: false },
-  { icon: Brain, label: "AI Predictions", active: false },
-  { icon: GraduationCap, label: "Courses", active: false },
-  { icon: FileText, label: "Reports", active: false },
+  { icon: LayoutDashboard, label: "Dashboard", path: "/" },
+  { icon: Users, label: "Students", path: "/students" },
+  { icon: BarChart3, label: "Analytics", path: "/analytics" },
+  { icon: Brain, label: "AI Predictions", path: "/predictions" },
+  { icon: GraduationCap, label: "Courses", path: "/courses" },
+  { icon: FileText, label: "Reports", path: "/reports" },
 ];
 
 export function Sidebar({ className }: SidebarProps) {
@@ -33,25 +33,40 @@ export function Sidebar({ className }: SidebarProps) {
     >
       <nav className="flex-1 p-4 space-y-1">
         {navItems.map((item) => (
-          <Button
+          <NavLink
             key={item.label}
-            variant={item.active ? "secondary" : "ghost"}
-            className={cn(
-              "w-full justify-start gap-3 h-11",
-              item.active && "bg-primary/10 text-primary hover:bg-primary/15"
-            )}
+            to={item.path}
+            end={item.path === "/"}
+            className={({ isActive }) =>
+              cn(
+                "flex items-center gap-3 h-11 px-3 rounded-md text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )
+            }
           >
             <item.icon className="h-5 w-5" />
             {item.label}
-          </Button>
+          </NavLink>
         ))}
       </nav>
 
       <div className="p-4 border-t">
-        <Button variant="ghost" className="w-full justify-start gap-3 h-11">
+        <NavLink
+          to="/settings"
+          className={({ isActive }) =>
+            cn(
+              "flex items-center gap-3 h-11 px-3 rounded-md text-sm font-medium transition-colors",
+              isActive
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            )
+          }
+        >
           <Settings className="h-5 w-5" />
           Settings
-        </Button>
+        </NavLink>
       </div>
     </aside>
   );
