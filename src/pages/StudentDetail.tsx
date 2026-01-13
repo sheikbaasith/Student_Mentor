@@ -25,6 +25,7 @@ import {
 import { cn } from "@/lib/utils";
 import { StudentGradeChart } from "@/components/student/StudentGradeChart";
 import { StudentRecommendations } from "@/components/student/StudentRecommendations";
+import { StudentReportCard } from "@/components/student/StudentReportCard";
 import { Student } from "@/hooks/useStudents";
 
 const predictionStyles = {
@@ -262,6 +263,9 @@ export default function StudentDetail() {
 
             {/* AI Recommendations */}
             <StudentRecommendations student={student} />
+
+            {/* Printable Report Card */}
+            <StudentReportCard student={student} />
           </div>
         </main>
       </div>
