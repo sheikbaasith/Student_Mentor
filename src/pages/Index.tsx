@@ -11,6 +11,7 @@ import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
 import { GradeDistribution } from "@/components/dashboard/GradeDistribution";
 import { RiskBreakdown } from "@/components/dashboard/RiskBreakdown";
 import { AddStudentDialog } from "@/components/dashboard/AddStudentDialog";
+import { ImportStudentsDialog } from "@/components/dashboard/ImportStudentsDialog";
 
 const Index = () => {
   const { user, loading: authLoading } = useAuth();
@@ -89,7 +90,10 @@ const Index = () => {
                   AI-powered insights into student performance and predictions
                 </p>
               </div>
-              <AddStudentDialog />
+              <div className="flex gap-2">
+                <ImportStudentsDialog />
+                <AddStudentDialog />
+              </div>
             </div>
 
             {/* Stats Grid */}
