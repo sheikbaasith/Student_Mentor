@@ -14,6 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      courses: {
+        Row: {
+          code: string
+          created_at: string
+          description: string | null
+          duration: string | null
+          id: string
+          max_students: number | null
+          name: string
+          status: string
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          id?: string
+          max_students?: number | null
+          name: string
+          status?: string
+          teacher_id: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          description?: string | null
+          duration?: string | null
+          id?: string
+          max_students?: number | null
+          name?: string
+          status?: string
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -49,6 +88,7 @@ export type Database = {
           attendance: number
           blood_group: string | null
           confidence: number
+          course_id: string | null
           created_at: string
           date_of_birth: string | null
           email: string
@@ -66,6 +106,7 @@ export type Database = {
           attendance?: number
           blood_group?: string | null
           confidence?: number
+          course_id?: string | null
           created_at?: string
           date_of_birth?: string | null
           email: string
@@ -83,6 +124,7 @@ export type Database = {
           attendance?: number
           blood_group?: string | null
           confidence?: number
+          course_id?: string | null
           created_at?: string
           date_of_birth?: string | null
           email?: string
@@ -96,7 +138,15 @@ export type Database = {
           teacher_id?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "students_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

@@ -17,6 +17,7 @@ export interface Student {
   roll_no: string | null;
   internal_marks: number;
   external_marks: number;
+  course_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -31,6 +32,7 @@ export interface NewStudent {
   roll_no?: string;
   internal_marks?: number;
   external_marks?: number;
+  course_id?: string;
   prediction?: "excelling" | "on-track" | "at-risk";
   confidence?: number;
 }
