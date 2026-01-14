@@ -11,14 +11,16 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Trash2, Loader2, ChevronDown, ChevronUp, Eye } from "lucide-react";
+import { Trash2, Loader2, ChevronDown, ChevronUp, Eye, BookOpen } from "lucide-react";
 import { Student, useStudents } from "@/hooks/useStudents";
+import { useCourses } from "@/hooks/useCourses";
 import { useNavigate } from "react-router-dom";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { AssignCourseDialog } from "@/components/students/AssignCourseDialog";
 
 interface StudentTableProps {
   students: Student[];
@@ -41,8 +43,15 @@ const predictionLabels = {
 export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
   ({ students, isLoading, className }, ref) => {
     const { deleteStudent, isDeleting } = useStudents();
+    const { courses } = useCourses();
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const navigate = useNavigate();
+
+    const getCourseName = (courseId: string | null) => {
+      if (!courseId) return null;
+      const course = courses.find((c) => c.id === courseId);
+      return course ? course.name : null;
+    };
 
   const getInitials = (name: string) => {
     return name
@@ -98,9 +107,8 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
             <TableHead className="font-semibold">Student</TableHead>
             <TableHead className="font-semibold">Roll No</TableHead>
             <TableHead className="font-semibold">Current Grade</TableHead>
-            <TableHead className="font-semibold">Attendance</TableHead>
+            <TableHead className="font-semibold">Course</TableHead>
             <TableHead className="font-semibold">AI Prediction</TableHead>
-            <TableHead className="font-semibold">Confidence</TableHead>
             <TableHead className="font-semibold w-12"></TableHead>
           </TableRow>
         </TableHeader>
@@ -148,24 +156,15 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
                     <span className={getGradeColor(student.grade)}>{student.grade}%</span>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className={cn(
-                            "h-full rounded-full transition-all",
-                            student.attendance >= 90
-                              ? "bg-success"
-                              : student.attendance >= 75
-                              ? "bg-accent"
-                              : "bg-warning"
-                          )}
-                          style={{ width: `${student.attendance}%` }}
-                        />
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        {student.attendance}%
-                      </span>
-                    </div>
+                    <AssignCourseDialog 
+                      student={student}
+                      trigger={
+                        <Button variant="ghost" size="sm" className="gap-1 text-xs h-7">
+                          <BookOpen className="h-3 w-3" />
+                          {getCourseName(student.course_id) || "Assign"}
+                        </Button>
+                      }
+                    />
                   </TableCell>
                   <TableCell>
                     <Badge
@@ -177,19 +176,6 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
                     >
                       {predictionLabels[student.prediction]}
                     </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <div className="w-12 h-2 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary rounded-full"
-                          style={{ width: `${student.confidence}%` }}
-                        />
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        {student.confidence}%
-                      </span>
-                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
@@ -215,8 +201,8 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
                 </TableRow>
                 <CollapsibleContent asChild>
                   <TableRow className="bg-muted/20">
-                    <TableCell colSpan={8} className="py-4">
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 px-4">
+                    <TableCell colSpan={7} className="py-4">
+                      <div className="grid grid-cols-2 md:grid-cols-6 gap-4 px-4">
                         <div>
                           <p className="text-xs text-muted-foreground uppercase tracking-wide">Date of Birth</p>
                           <p className="font-medium mt-1">{formatDate(student.date_of_birth)}</p>
@@ -224,6 +210,10 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
                         <div>
                           <p className="text-xs text-muted-foreground uppercase tracking-wide">Blood Group</p>
                           <p className="font-medium mt-1">{student.blood_group || "N/A"}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wide">Attendance</p>
+                          <p className="font-medium mt-1">{student.attendance}%</p>
                         </div>
                         <div>
                           <p className="text-xs text-muted-foreground uppercase tracking-wide">Internal Marks</p>
@@ -234,8 +224,8 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
                           <p className="font-medium mt-1">{student.external_marks}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Marks</p>
-                          <p className="font-medium mt-1">{student.internal_marks + student.external_marks}</p>
+                          <p className="text-xs text-muted-foreground uppercase tracking-wide">Confidence</p>
+                          <p className="font-medium mt-1">{student.confidence}%</p>
                         </div>
                       </div>
                     </TableCell>
