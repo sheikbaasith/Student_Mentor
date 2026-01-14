@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Trash2, Loader2, ChevronDown, ChevronUp, Eye, BookOpen } from "lucide-react";
+import { Trash2, Loader2, ChevronDown, ChevronUp, Eye, BookOpen, Pencil } from "lucide-react";
 import { Student, useStudents } from "@/hooks/useStudents";
 import { useCourses } from "@/hooks/useCourses";
 import { useNavigate } from "react-router-dom";
@@ -21,6 +21,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { AssignCourseDialog } from "@/components/students/AssignCourseDialog";
+import { EditStudentDialog } from "@/components/students/EditStudentDialog";
 
 interface StudentTableProps {
   students: Student[];
@@ -45,6 +46,7 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
     const { deleteStudent, isDeleting } = useStudents();
     const { courses } = useCourses();
     const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [editingStudent, setEditingStudent] = useState<Student | null>(null);
     const navigate = useNavigate();
 
     const getCourseName = (courseId: string | null) => {
@@ -182,6 +184,14 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
                       <Button
                         variant="ghost"
                         size="icon"
+                        onClick={() => setEditingStudent(student)}
+                        className="text-muted-foreground hover:text-primary"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={() => navigate(`/student/${student.id}`)}
                         className="text-muted-foreground hover:text-primary"
                       >
@@ -236,6 +246,15 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
           ))}
         </TableBody>
       </Table>
+
+      {/* Edit Student Dialog */}
+      {editingStudent && (
+        <EditStudentDialog
+          student={editingStudent}
+          open={!!editingStudent}
+          onOpenChange={(open) => !open && setEditingStudent(null)}
+        />
+      )}
     </div>
   );
   }
