@@ -18,11 +18,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Users, Clock, MoreVertical, Edit, Trash2, BookOpen } from "lucide-react";
+import { Users, Clock, MoreVertical, Edit, Trash2, UserPlus } from "lucide-react";
 import { Course, useCourses } from "@/hooks/useCourses";
 import { useStudents } from "@/hooks/useStudents";
 import { cn } from "@/lib/utils";
 import { EditCourseDialog } from "./EditCourseDialog";
+import { CourseStudentsDialog } from "./CourseStudentsDialog";
 
 interface CourseCardProps {
   course: Course;
@@ -94,21 +95,28 @@ export function CourseCard({ course }: CourseCardProps) {
               {course.description}
             </p>
           )}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Users className="h-4 w-4" />
-              <span className="text-sm">
-                {enrolledStudents}/{course.max_students}
-              </span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Users className="h-4 w-4" />
+                <span className="text-sm">
+                  {enrolledStudents}/{course.max_students}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                <span className="text-sm">{course.duration}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              <span className="text-sm">{course.duration}</span>
-            </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <BookOpen className="h-4 w-4" />
-              <span className="text-sm capitalize">{course.status}</span>
-            </div>
+            <CourseStudentsDialog 
+              course={course}
+              trigger={
+                <Button variant="outline" size="sm" className="gap-1">
+                  <UserPlus className="h-4 w-4" />
+                  Manage
+                </Button>
+              }
+            />
           </div>
         </CardContent>
       </Card>
