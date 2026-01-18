@@ -10,8 +10,15 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Trash2, Loader2, ChevronDown, ChevronUp, Eye, BookOpen, Pencil } from "lucide-react";
+import { Trash2, Loader2, ChevronDown, ChevronUp, Eye, BookOpen, Pencil, Filter } from "lucide-react";
 import { Student, useStudents } from "@/hooks/useStudents";
 import { useCourses } from "@/hooks/useCourses";
 import { useNavigate } from "react-router-dom";
@@ -47,7 +54,15 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
     const { courses } = useCourses();
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
+    const [courseFilter, setCourseFilter] = useState<string>("all");
     const navigate = useNavigate();
+
+    // Filter students by selected course
+    const filteredStudents = courseFilter === "all" 
+      ? students 
+      : courseFilter === "unassigned"
+        ? students.filter(s => !s.course_id)
+        : students.filter(s => s.course_id === courseFilter);
 
     const getCourseName = (courseId: string | null) => {
       if (!courseId) return null;
@@ -97,10 +112,31 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
   return (
     <div className="rounded-xl border bg-card card-shadow overflow-hidden animate-slide-up">
       <div className="p-6 border-b">
-        <h3 className="text-lg font-semibold">Student Performance Overview</h3>
-        <p className="text-sm text-muted-foreground mt-1">
-          AI-powered predictions for student outcomes
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h3 className="text-lg font-semibold">Student Performance Overview</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              AI-powered predictions for student outcomes
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={courseFilter} onValueChange={setCourseFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Filter by course" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Courses</SelectItem>
+                <SelectItem value="unassigned">Unassigned</SelectItem>
+                {courses.map((course) => (
+                  <SelectItem key={course.id} value={course.id}>
+                    {course.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
       </div>
       <Table>
         <TableHeader>
@@ -115,7 +151,14 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
           </TableRow>
         </TableHeader>
         <TableBody>
-          {students.map((student, index) => (
+          {filteredStudents.length === 0 ? (
+            <TableRow>
+              <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                No students found for the selected filter
+              </TableCell>
+            </TableRow>
+          ) : null}
+          {filteredStudents.map((student, index) => (
             <Collapsible
               key={student.id}
               open={expandedId === student.id}
