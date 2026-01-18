@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Users, Clock, MoreVertical, Edit, Trash2, UserPlus } from "lucide-react";
+import { Users, Clock, MoreVertical, Edit, Trash2, UserPlus, Eye } from "lucide-react";
 import { Course, useCourses } from "@/hooks/useCourses";
 import { useStudents } from "@/hooks/useStudents";
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ export function CourseCard({ course }: CourseCardProps) {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const { deleteCourse, isDeleting } = useCourses();
   const { students } = useStudents();
+  const navigate = useNavigate();
 
   // Count students enrolled in this course
   const enrolledStudents = students.filter((s) => s.course_id === course.id).length;
@@ -73,6 +75,10 @@ export function CourseCard({ course }: CourseCardProps) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => navigate(`/course/${course.id}`)}>
+                    <Eye className="mr-2 h-4 w-4" />
+                    View Details
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => setEditDialogOpen(true)}>
                     <Edit className="mr-2 h-4 w-4" />
                     Edit
