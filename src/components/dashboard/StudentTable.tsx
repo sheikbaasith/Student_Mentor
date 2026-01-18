@@ -55,14 +55,23 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
     const [courseFilter, setCourseFilter] = useState<string>("all");
+    const [predictionFilter, setPredictionFilter] = useState<string>("all");
     const navigate = useNavigate();
 
-    // Filter students by selected course
-    const filteredStudents = courseFilter === "all" 
-      ? students 
-      : courseFilter === "unassigned"
-        ? students.filter(s => !s.course_id)
-        : students.filter(s => s.course_id === courseFilter);
+    // Filter students by selected course and prediction status
+    const filteredStudents = students.filter(student => {
+      const matchesCourse = courseFilter === "all" 
+        ? true 
+        : courseFilter === "unassigned"
+          ? !student.course_id
+          : student.course_id === courseFilter;
+      
+      const matchesPrediction = predictionFilter === "all" 
+        ? true 
+        : student.prediction === predictionFilter;
+      
+      return matchesCourse && matchesPrediction;
+    });
 
     const getCourseName = (courseId: string | null) => {
       if (!courseId) return null;
@@ -119,7 +128,7 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
               AI-powered predictions for student outcomes
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3 flex-wrap">
             <Filter className="h-4 w-4 text-muted-foreground" />
             <Select value={courseFilter} onValueChange={setCourseFilter}>
               <SelectTrigger className="w-[180px]">
@@ -133,6 +142,17 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
                     {course.name}
                   </SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+            <Select value={predictionFilter} onValueChange={setPredictionFilter}>
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="excelling">Excelling</SelectItem>
+                <SelectItem value="on-track">On Track</SelectItem>
+                <SelectItem value="at-risk">At Risk</SelectItem>
               </SelectContent>
             </Select>
           </div>
