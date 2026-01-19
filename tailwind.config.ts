@@ -15,7 +15,7 @@ export default {
   	extend: {
   		fontFamily: {
   			sans: [
-  				'Open Sans',
+  				'Lato',
   				'ui-sans-serif',
   				'system-ui',
   				'sans-serif',
