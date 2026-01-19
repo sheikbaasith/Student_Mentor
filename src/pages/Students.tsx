@@ -6,6 +6,7 @@ import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { StudentTable } from "@/components/dashboard/StudentTable";
 import { AddStudentDialog } from "@/components/dashboard/AddStudentDialog";
+import { ImportStudentsDialog } from "@/components/dashboard/ImportStudentsDialog";
 import { Loader2 } from "lucide-react";
 
 export default function Students() {
@@ -45,7 +46,10 @@ export default function Students() {
                   Manage and view all your students
                 </p>
               </div>
-              <AddStudentDialog />
+              <div className="flex gap-2">
+                <ImportStudentsDialog />
+                <AddStudentDialog />
+              </div>
             </div>
             <StudentTable students={students} isLoading={isLoading} />
           </div>
