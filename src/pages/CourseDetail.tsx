@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/layout/Header";
@@ -29,10 +30,16 @@ import {
   GraduationCap,
   BarChart3,
   Target,
+  Download,
+  FileSpreadsheet,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Course } from "@/hooks/useCourses";
 import { Student } from "@/hooks/useStudents";
+import { useToast } from "@/hooks/use-toast";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import {
   PieChart,
   Pie,
@@ -69,6 +76,9 @@ export default function CourseDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const { toast } = useToast();
+  const reportRef = useRef<HTMLDivElement>(null);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   const { data: course, isLoading: courseLoading } = useQuery({
     queryKey: ["course", id],
@@ -187,6 +197,101 @@ export default function CourseDetail() {
     return "text-danger font-semibold";
   };
 
+  // Export students to CSV
+  const handleExportCSV = () => {
+    if (students.length === 0) {
+      toast({
+        title: "No Data",
+        description: "No students enrolled in this course to export.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const headers = [
+      "Name",
+      "Email",
+      "Roll No",
+      "Grade",
+      "Attendance",
+      "Internal Marks",
+      "External Marks",
+      "Total Marks",
+      "Prediction",
+      "Confidence",
+    ];
+    const csvContent = [
+      headers.join(","),
+      ...students.map((s) =>
+        [
+          `"${s.name}"`,
+          s.email,
+          s.roll_no || "",
+          s.grade,
+          s.attendance,
+          s.internal_marks,
+          s.external_marks,
+          (s.internal_marks || 0) + (s.external_marks || 0),
+          s.prediction,
+          s.confidence,
+        ].join(",")
+      ),
+    ].join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${course?.code || "course"}_students_${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+
+    toast({
+      title: "CSV Exported",
+      description: `Exported ${students.length} student records.`,
+    });
+  };
+
+  // Generate PDF report
+  const handleExportPDF = async () => {
+    if (!reportRef.current) return;
+
+    setIsGeneratingPDF(true);
+    try {
+      const canvas = await html2canvas(reportRef.current, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+      });
+
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF({
+        orientation: "portrait",
+        unit: "mm",
+        format: "a4",
+      });
+
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`${course?.code || "course"}_report_${new Date().toISOString().split("T")[0]}.pdf`);
+
+      toast({
+        title: "Report Generated",
+        description: "Course report has been downloaded as PDF.",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate PDF report.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <Header />
@@ -207,36 +312,61 @@ export default function CourseDetail() {
             {/* Course Header */}
             <Card className="card-shadow animate-slide-up">
               <CardContent className="p-6">
-                <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <h1 className="text-2xl font-bold">{course.name}</h1>
-                      <Badge
-                        variant="outline"
-                        className={cn("capitalize", statusStyles[course.status])}
-                      >
-                        {course.status}
-                      </Badge>
+                <div className="flex flex-col gap-6">
+                  <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        <h1 className="text-2xl font-bold">{course.name}</h1>
+                        <Badge
+                          variant="outline"
+                          className={cn("capitalize", statusStyles[course.status])}
+                        >
+                          {course.status}
+                        </Badge>
+                      </div>
+                      <p className="text-muted-foreground">{course.code}</p>
+                      {course.description && (
+                        <p className="text-sm text-muted-foreground max-w-2xl">
+                          {course.description}
+                        </p>
+                      )}
                     </div>
-                    <p className="text-muted-foreground">{course.code}</p>
-                    {course.description && (
-                      <p className="text-sm text-muted-foreground max-w-2xl">
-                        {course.description}
-                      </p>
-                    )}
+                    <div className="flex items-center gap-6 text-sm">
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Users className="h-5 w-5" />
+                        <span className="font-medium text-foreground">
+                          {students.length}/{course.max_students}
+                        </span>
+                        <span>Students</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Clock className="h-5 w-5" />
+                        <span>{course.duration}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-6 text-sm">
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Users className="h-5 w-5" />
-                      <span className="font-medium text-foreground">
-                        {students.length}/{course.max_students}
-                      </span>
-                      <span>Students</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Clock className="h-5 w-5" />
-                      <span>{course.duration}</span>
-                    </div>
+                  {/* Export Buttons */}
+                  <div className="flex flex-wrap gap-3 pt-2 border-t">
+                    <Button
+                      variant="outline"
+                      onClick={handleExportCSV}
+                      disabled={students.length === 0}
+                    >
+                      <FileSpreadsheet className="mr-2 h-4 w-4" />
+                      Export CSV
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={handleExportPDF}
+                      disabled={isGeneratingPDF || students.length === 0}
+                    >
+                      {isGeneratingPDF ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <FileText className="mr-2 h-4 w-4" />
+                      )}
+                      Export PDF Report
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -492,6 +622,137 @@ export default function CourseDetail() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Hidden Printable Report Section */}
+            <div
+              ref={reportRef}
+              className="absolute -left-[9999px] bg-white p-8 w-[210mm] space-y-6"
+              aria-hidden="true"
+            >
+              {/* Report Header */}
+              <div className="text-center border-b pb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {course.name} - Course Report
+                </h2>
+                <p className="text-gray-600 mt-1">{course.code}</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Generated on{" "}
+                  {new Date().toLocaleDateString("en-US", {
+                    year: "numeric",
+                    month: "long",
+                    day: "numeric",
+                  })}
+                </p>
+              </div>
+
+              {/* Course Summary */}
+              <div className="grid grid-cols-4 gap-4">
+                <div className="text-center p-4 rounded-lg bg-blue-50 border border-blue-100">
+                  <Users className="h-6 w-6 mx-auto text-blue-600 mb-2" />
+                  <p className="text-2xl font-bold text-blue-700">{students.length}</p>
+                  <p className="text-sm text-blue-600">Enrolled</p>
+                </div>
+                <div className="text-center p-4 rounded-lg bg-purple-50 border border-purple-100">
+                  <GraduationCap className="h-6 w-6 mx-auto text-purple-600 mb-2" />
+                  <p className="text-2xl font-bold text-purple-700">{avgGrade}%</p>
+                  <p className="text-sm text-purple-600">Avg Grade</p>
+                </div>
+                <div className="text-center p-4 rounded-lg bg-green-50 border border-green-100">
+                  <Target className="h-6 w-6 mx-auto text-green-600 mb-2" />
+                  <p className="text-2xl font-bold text-green-700">{avgAttendance}%</p>
+                  <p className="text-sm text-green-600">Attendance</p>
+                </div>
+                <div className="text-center p-4 rounded-lg bg-red-50 border border-red-100">
+                  <AlertTriangle className="h-6 w-6 mx-auto text-red-600 mb-2" />
+                  <p className="text-2xl font-bold text-red-700">{predictionCounts["at-risk"]}</p>
+                  <p className="text-sm text-red-600">At Risk</p>
+                </div>
+              </div>
+
+              {/* Student Status Distribution */}
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Student Status Distribution</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="text-center p-4 rounded-lg bg-green-50 border border-green-100">
+                    <CheckCircle className="h-5 w-5 mx-auto text-green-600 mb-2" />
+                    <p className="text-xl font-bold text-green-700">{predictionCounts.excelling}</p>
+                    <p className="text-sm text-green-600">Excelling</p>
+                  </div>
+                  <div className="text-center p-4 rounded-lg bg-yellow-50 border border-yellow-100">
+                    <TrendingUp className="h-5 w-5 mx-auto text-yellow-600 mb-2" />
+                    <p className="text-xl font-bold text-yellow-700">{predictionCounts["on-track"]}</p>
+                    <p className="text-sm text-yellow-600">On Track</p>
+                  </div>
+                  <div className="text-center p-4 rounded-lg bg-red-50 border border-red-100">
+                    <AlertTriangle className="h-5 w-5 mx-auto text-red-600 mb-2" />
+                    <p className="text-xl font-bold text-red-700">{predictionCounts["at-risk"]}</p>
+                    <p className="text-sm text-red-600">At Risk</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grade Distribution */}
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Grade Distribution</h3>
+                <div className="grid grid-cols-5 gap-3">
+                  {gradeDistribution.map((item, index) => {
+                    const colors = [
+                      "bg-green-100 text-green-700",
+                      "bg-blue-100 text-blue-700",
+                      "bg-yellow-100 text-yellow-700",
+                      "bg-orange-100 text-orange-700",
+                      "bg-red-100 text-red-700",
+                    ];
+                    return (
+                      <div key={item.range} className={`text-center p-3 rounded-lg ${colors[index]}`}>
+                        <p className="text-2xl font-bold">{item.count}</p>
+                        <p className="text-xs">{item.range}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Students List */}
+              <div className="border-t pt-4">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Enrolled Students ({students.length})
+                </h3>
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="px-3 py-2 text-left font-medium text-gray-700">Name</th>
+                      <th className="px-3 py-2 text-left font-medium text-gray-700">Roll No</th>
+                      <th className="px-3 py-2 text-center font-medium text-gray-700">Grade</th>
+                      <th className="px-3 py-2 text-center font-medium text-gray-700">Attendance</th>
+                      <th className="px-3 py-2 text-center font-medium text-gray-700">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {students.slice(0, 20).map((student) => (
+                      <tr key={student.id}>
+                        <td className="px-3 py-2 text-gray-900">{student.name}</td>
+                        <td className="px-3 py-2 text-gray-600">{student.roll_no || "N/A"}</td>
+                        <td className="px-3 py-2 text-center font-medium">{student.grade}%</td>
+                        <td className="px-3 py-2 text-center">{student.attendance}%</td>
+                        <td className="px-3 py-2 text-center capitalize">{student.prediction}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {students.length > 20 && (
+                  <p className="px-3 py-2 text-sm text-gray-500 bg-gray-50">
+                    ...and {students.length - 20} more students
+                  </p>
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="mt-8 pt-4 border-t text-center text-xs text-gray-500">
+                <p>This report was generated by the Student Performance Prediction System</p>
+                <p className="mt-1">© {new Date().getFullYear()} EduPredict - AI-Powered Student Analytics</p>
+              </div>
+            </div>
           </div>
         </main>
       </div>
