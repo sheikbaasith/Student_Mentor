@@ -26,6 +26,7 @@ import { cn } from "@/lib/utils";
 import { StudentGradeChart } from "@/components/student/StudentGradeChart";
 import { StudentRecommendations } from "@/components/student/StudentRecommendations";
 import { StudentReportCard } from "@/components/student/StudentReportCard";
+import { SendNotificationDialog } from "@/components/students/SendNotificationDialog";
 import { Student } from "@/hooks/useStudents";
 
 const predictionStyles = {
@@ -163,9 +164,14 @@ export default function StudentDetail() {
                       </p>
                     )}
                   </div>
-                  <div className="text-right space-y-1">
-                    <p className="text-sm text-muted-foreground">AI Confidence</p>
-                    <p className="text-3xl font-bold text-primary">{student.confidence}%</p>
+                  <div className="flex items-center gap-3">
+                    {student.prediction === "at-risk" && (
+                      <SendNotificationDialog student={student} />
+                    )}
+                    <div className="text-right space-y-1">
+                      <p className="text-sm text-muted-foreground">AI Confidence</p>
+                      <p className="text-3xl font-bold text-primary">{student.confidence}%</p>
+                    </div>
                   </div>
                 </div>
               </CardContent>

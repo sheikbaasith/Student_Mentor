@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Trash2, Loader2, ChevronDown, ChevronUp, Eye, BookOpen, Pencil, Filter } from "lucide-react";
+import { Trash2, Loader2, ChevronDown, ChevronUp, Eye, BookOpen, Pencil, Filter, Mail } from "lucide-react";
 import { Student, useStudents } from "@/hooks/useStudents";
 import { useCourses } from "@/hooks/useCourses";
 import { useNavigate } from "react-router-dom";
@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/collapsible";
 import { AssignCourseDialog } from "@/components/students/AssignCourseDialog";
 import { EditStudentDialog } from "@/components/students/EditStudentDialog";
+import { SendNotificationDialog } from "@/components/students/SendNotificationDialog";
 
 interface StudentTableProps {
   students: Student[];
@@ -244,6 +245,11 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
+                      {student.prediction === "at-risk" && (
+                        <SendNotificationDialog 
+                          student={student} 
+                        />
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"
