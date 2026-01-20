@@ -8,6 +8,8 @@ export interface Student {
   teacher_id: string;
   name: string;
   email: string;
+  phone: string | null;
+  address: string | null;
   grade: number;
   attendance: number;
   prediction: "excelling" | "on-track" | "at-risk";
@@ -25,6 +27,8 @@ export interface Student {
 export interface NewStudent {
   name: string;
   email: string;
+  phone?: string;
+  address?: string;
   grade: number;
   attendance: number;
   date_of_birth?: string;
@@ -82,6 +86,8 @@ export function useStudents() {
           teacher_id: user.id,
           name: student.name,
           email: student.email,
+          phone: student.phone || null,
+          address: student.address || null,
           grade: student.grade,
           attendance: student.attendance,
           date_of_birth: student.date_of_birth || null,

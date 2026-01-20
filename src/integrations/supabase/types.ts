@@ -85,6 +85,7 @@ export type Database = {
       }
       students: {
         Row: {
+          address: string | null
           attendance: number
           blood_group: string | null
           confidence: number
@@ -97,12 +98,14 @@ export type Database = {
           id: string
           internal_marks: number | null
           name: string
+          phone: string | null
           prediction: string
           roll_no: string | null
           teacher_id: string
           updated_at: string
         }
         Insert: {
+          address?: string | null
           attendance?: number
           blood_group?: string | null
           confidence?: number
@@ -115,12 +118,14 @@ export type Database = {
           id?: string
           internal_marks?: number | null
           name: string
+          phone?: string | null
           prediction?: string
           roll_no?: string | null
           teacher_id: string
           updated_at?: string
         }
         Update: {
+          address?: string | null
           attendance?: number
           blood_group?: string | null
           confidence?: number
@@ -133,6 +138,7 @@ export type Database = {
           id?: string
           internal_marks?: number | null
           name?: string
+          phone?: string | null
           prediction?: string
           roll_no?: string | null
           teacher_id?: string

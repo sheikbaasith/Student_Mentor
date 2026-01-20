@@ -27,6 +27,8 @@ export function AddStudentDialog() {
   const [formData, setFormData] = useState<NewStudent>({
     name: "",
     email: "",
+    phone: "",
+    address: "",
     grade: 0,
     attendance: 0,
     date_of_birth: "",
@@ -45,6 +47,8 @@ export function AddStudentDialog() {
         setFormData({
           name: "",
           email: "",
+          phone: "",
+          address: "",
           grade: 0,
           attendance: 0,
           date_of_birth: "",
@@ -109,6 +113,16 @@ export function AddStudentDialog() {
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="+1 234 567 890"
+                value={formData.phone || ""}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="dob">Date of Birth</Label>
               <Input
                 id="dob"
@@ -135,6 +149,16 @@ export function AddStudentDialog() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="address">Address</Label>
+            <Input
+              id="address"
+              placeholder="123 Main St, City, Country"
+              value={formData.address || ""}
+              onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
