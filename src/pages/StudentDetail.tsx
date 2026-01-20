@@ -15,6 +15,8 @@ import {
   Droplets,
   GraduationCap,
   Mail,
+  Phone,
+  MapPin,
   User,
   Hash,
   TrendingUp,
@@ -189,6 +191,14 @@ export default function StudentDetail() {
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground flex items-center gap-2">
+                      <Phone className="h-4 w-4" />
+                      Phone
+                    </span>
+                    <span className="font-medium">{student.phone || "N/A"}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground flex items-center gap-2">
                       <Calendar className="h-4 w-4" />
                       Date of Birth
                     </span>
@@ -209,6 +219,14 @@ export default function StudentDetail() {
                       Roll Number
                     </span>
                     <span className="font-medium">{student.roll_no || "N/A"}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex items-start justify-between">
+                    <span className="text-muted-foreground flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Address
+                    </span>
+                    <span className="font-medium text-right max-w-[200px]">{student.address || "N/A"}</span>
                   </div>
                 </CardContent>
               </Card>

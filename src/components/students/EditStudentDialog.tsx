@@ -36,6 +36,8 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
   // Personal details
   const [name, setName] = useState(student.name);
   const [email, setEmail] = useState(student.email);
+  const [phone, setPhone] = useState(student.phone || "");
+  const [address, setAddress] = useState(student.address || "");
   const [rollNo, setRollNo] = useState(student.roll_no || "");
   const [dateOfBirth, setDateOfBirth] = useState(student.date_of_birth || "");
   const [bloodGroup, setBloodGroup] = useState(student.blood_group || "");
@@ -53,6 +55,8 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
   useEffect(() => {
     setName(student.name);
     setEmail(student.email);
+    setPhone(student.phone || "");
+    setAddress(student.address || "");
     setRollNo(student.roll_no || "");
     setDateOfBirth(student.date_of_birth || "");
     setBloodGroup(student.blood_group || "");
@@ -88,6 +92,8 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
         id: student.id,
         name: name.trim(),
         email: email.trim(),
+        phone: phone.trim() || null,
+        address: address.trim() || null,
         roll_no: rollNo.trim() || null,
         date_of_birth: dateOfBirth || null,
         blood_group: bloodGroup || null,
@@ -164,6 +170,17 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+1 234 567 890"
+                    maxLength={20}
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label htmlFor="rollNo">Roll Number</Label>
                   <Input
                     id="rollNo"
@@ -198,6 +215,17 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
                   type="date"
                   value={dateOfBirth}
                   onChange={(e) => setDateOfBirth(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="address">Address</Label>
+                <Input
+                  id="address"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  placeholder="123 Main St, City, Country"
+                  maxLength={255}
                 />
               </div>
             </TabsContent>
