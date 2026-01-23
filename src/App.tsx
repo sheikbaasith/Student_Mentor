@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/useAuth";
 import { ThemeProvider } from "next-themes";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import StudentDetail from "./pages/StudentDetail";
 import CourseDetail from "./pages/CourseDetail";
 import Students from "./pages/Students";
@@ -30,6 +31,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/students" element={<Students />} />
               <Route path="/analytics" element={<Analytics />} />
               <Route path="/predictions" element={<Predictions />} />
