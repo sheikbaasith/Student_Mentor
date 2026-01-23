@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, GraduationCap, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -173,7 +174,16 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex bg-background overflow-hidden">
+    <div className="min-h-screen flex bg-background overflow-hidden transition-colors duration-500">
+      {/* Theme Toggle - Positioned at top right */}
+      <motion.div 
+        className="absolute top-4 right-4 z-50"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.5, duration: 0.3 }}
+      >
+        <ThemeToggle />
+      </motion.div>
       {/* Left Side - Branding with Animations */}
       <motion.div 
         className="hidden lg:flex lg:w-1/2 gradient-primary p-12 flex-col justify-between relative"
