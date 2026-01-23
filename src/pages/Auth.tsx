@@ -21,18 +21,25 @@ const floatingShapes = [
   { size: 50, x: "50%", y: "10%", delay: 1.5, duration: 11 },
 ];
 
+type AuthView = "login" | "signup" | "forgot";
+
 const Auth = () => {
-  const [isLogin, setIsLogin] = useState(true);
+  const [authView, setAuthView] = useState<AuthView>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resetEmailSent, setResetEmailSent] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; fullName?: string }>({});
 
-  const { user, loading, signIn, signUp } = useAuth();
+  const { user, loading, signIn, signUp, resetPassword } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  const isLogin = authView === "login";
+  const isSignup = authView === "signup";
+  const isForgot = authView === "forgot";
 
   useEffect(() => {
     if (!loading && user) {
@@ -51,15 +58,17 @@ const Auth = () => {
       }
     }
 
-    try {
-      passwordSchema.parse(password);
-    } catch (e) {
-      if (e instanceof z.ZodError) {
-        newErrors.password = e.errors[0].message;
+    if (!isForgot) {
+      try {
+        passwordSchema.parse(password);
+      } catch (e) {
+        if (e instanceof z.ZodError) {
+          newErrors.password = e.errors[0].message;
+        }
       }
     }
 
-    if (!isLogin && !fullName.trim()) {
+    if (isSignup && !fullName.trim()) {
       newErrors.fullName = "Full name is required";
     }
 
@@ -75,7 +84,22 @@ const Auth = () => {
     setIsSubmitting(true);
 
     try {
-      if (isLogin) {
+      if (isForgot) {
+        const { error } = await resetPassword(email);
+        if (error) {
+          toast({
+            title: "Error",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else {
+          setResetEmailSent(true);
+          toast({
+            title: "Email Sent!",
+            description: "Check your inbox for password reset instructions.",
+          });
+        }
+      } else if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) {
           if (error.message.includes("Invalid login credentials")) {
@@ -106,7 +130,7 @@ const Auth = () => {
               description: "An account with this email already exists. Please login instead.",
               variant: "destructive",
             });
-            setIsLogin(true);
+            setAuthView("login");
           } else {
             toast({
               title: "Error",
@@ -325,7 +349,7 @@ const Auth = () => {
 
           <AnimatePresence mode="wait">
             <motion.div 
-              key={isLogin ? "login" : "signup"}
+              key={authView}
               className="text-center lg:text-left"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -333,47 +357,79 @@ const Auth = () => {
               transition={{ duration: 0.3 }}
             >
               <h2 className="text-2xl font-bold">
-                {isLogin ? "Welcome back" : "Create your account"}
+                {isForgot ? "Reset your password" : isLogin ? "Welcome back" : "Create your account"}
               </h2>
               <p className="text-muted-foreground mt-2">
-                {isLogin
+                {isForgot
+                  ? "Enter your email to receive a reset link"
+                  : isLogin
                   ? "Enter your credentials to access your dashboard"
                   : "Start predicting student performance today"}
               </p>
             </motion.div>
           </AnimatePresence>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <AnimatePresence mode="wait">
-              {!isLogin && (
-                <motion.div 
-                  className="space-y-2"
-                  variants={formItemVariants}
-                  initial="hidden"
-                  animate="visible"
-                  exit="exit"
-                >
-                  <Label htmlFor="fullName">Full Name</Label>
-                  <Input
-                    id="fullName"
-                    type="text"
-                    placeholder="Dr. John Smith"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className={errors.fullName ? "border-danger" : ""}
-                  />
-                  {errors.fullName && (
-                    <motion.p 
-                      className="text-sm text-danger"
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
+          {resetEmailSent && isForgot ? (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center space-y-4 py-8"
+            >
+              <div className="h-16 w-16 rounded-full bg-success/10 flex items-center justify-center mx-auto">
+                <svg className="h-8 w-8 text-success" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">Check your email</h3>
+                <p className="text-muted-foreground text-sm mt-1">
+                  We've sent a password reset link to <strong>{email}</strong>
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setAuthView("login");
+                  setResetEmailSent(false);
+                }}
+                className="mt-4"
+              >
+                Back to login
+              </Button>
+            </motion.div>
+          ) : (
+            <>
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <AnimatePresence mode="wait">
+                  {isSignup && (
+                    <motion.div 
+                      className="space-y-2"
+                      variants={formItemVariants}
+                      initial="hidden"
+                      animate="visible"
+                      exit="exit"
                     >
-                      {errors.fullName}
-                    </motion.p>
+                      <Label htmlFor="fullName">Full Name</Label>
+                      <Input
+                        id="fullName"
+                        type="text"
+                        placeholder="Dr. John Smith"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className={errors.fullName ? "border-danger" : ""}
+                      />
+                      {errors.fullName && (
+                        <motion.p 
+                          className="text-sm text-danger"
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                        >
+                          {errors.fullName}
+                        </motion.p>
+                      )}
+                    </motion.div>
                   )}
-                </motion.div>
-              )}
-            </AnimatePresence>
+                </AnimatePresence>
 
             <motion.div 
               className="space-y-2"
@@ -401,46 +457,51 @@ const Auth = () => {
               )}
             </motion.div>
 
-            <motion.div 
-              className="space-y-2"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2, duration: 0.4 }}
-            >
-              <Label htmlFor="password">Password</Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className={errors.password ? "border-danger pr-10" : "pr-10"}
-                />
-                <motion.button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </motion.button>
-              </div>
-              {errors.password && (
-                <motion.p 
-                  className="text-sm text-danger"
-                  initial={{ opacity: 0, x: -10 }}
+            <AnimatePresence mode="wait">
+              {!isForgot && (
+                <motion.div 
+                  className="space-y-2"
+                  initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 20 }}
+                  transition={{ delay: 0.2, duration: 0.4 }}
                 >
-                  {errors.password}
-                </motion.p>
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className={errors.password ? "border-danger pr-10" : "pr-10"}
+                    />
+                    <motion.button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </motion.button>
+                  </div>
+                  {errors.password && (
+                    <motion.p 
+                      className="text-sm text-danger"
+                      initial={{ opacity: 0, x: -10 }}
+                      animate={{ opacity: 1, x: 0 }}
+                    >
+                      {errors.password}
+                    </motion.p>
+                  )}
+                </motion.div>
               )}
-            </motion.div>
+            </AnimatePresence>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -462,7 +523,7 @@ const Auth = () => {
                       exit={{ opacity: 0 }}
                     >
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      {isLogin ? "Signing in..." : "Creating account..."}
+                      {isForgot ? "Sending..." : isLogin ? "Signing in..." : "Creating account..."}
                     </motion.span>
                   ) : (
                     <motion.span
@@ -471,7 +532,7 @@ const Auth = () => {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                     >
-                      {isLogin ? "Sign In" : "Create Account"}
+                      {isForgot ? "Send Reset Link" : isLogin ? "Sign In" : "Create Account"}
                     </motion.span>
                   )}
                 </AnimatePresence>
@@ -480,26 +541,42 @@ const Auth = () => {
           </form>
 
           <motion.div 
-            className="text-center"
+            className="text-center space-y-2"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4, duration: 0.4 }}
           >
+            {isLogin && (
+              <motion.button
+                type="button"
+                onClick={() => {
+                  setAuthView("forgot");
+                  setErrors({});
+                }}
+                className="text-sm text-primary hover:underline transition-colors block mx-auto"
+                whileHover={{ scale: 1.02 }}
+              >
+                Forgot your password?
+              </motion.button>
+            )}
             <motion.button
               type="button"
               onClick={() => {
-                setIsLogin(!isLogin);
+                setAuthView(isLogin ? "signup" : "login");
                 setErrors({});
+                setResetEmailSent(false);
               }}
               className="text-sm text-muted-foreground hover:text-primary transition-colors"
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              {isLogin
+              {isLogin || isForgot
                 ? "Don't have an account? Sign up"
                 : "Already have an account? Sign in"}
             </motion.button>
           </motion.div>
+            </>
+          )}
         </div>
       </motion.div>
     </div>
