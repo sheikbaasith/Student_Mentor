@@ -9,7 +9,8 @@ import { Eye, EyeOff, GraduationCap, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "@/components/ThemeToggle";
-
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { Separator } from "@/components/ui/separator";
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
 
@@ -539,6 +540,28 @@ const Auth = () => {
               </Button>
             </motion.div>
           </form>
+
+          {/* Divider */}
+          {!isForgot && (
+            <motion.div
+              className="relative"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.35 }}
+            >
+              <div className="absolute inset-0 flex items-center">
+                <Separator className="w-full" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
+            </motion.div>
+          )}
+
+          {/* Google Sign In */}
+          {!isForgot && <GoogleSignInButton />}
 
           <motion.div 
             className="text-center space-y-2"

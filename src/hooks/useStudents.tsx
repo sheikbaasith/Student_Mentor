@@ -20,6 +20,7 @@ export interface Student {
   internal_marks: number;
   external_marks: number;
   course_id: string | null;
+  photo_url: string | null;
   created_at: string;
   updated_at: string;
 }

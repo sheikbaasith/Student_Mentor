@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/layout/Header";
@@ -7,7 +8,6 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import {
   ArrowLeft,
@@ -29,6 +29,7 @@ import { StudentGradeChart } from "@/components/student/StudentGradeChart";
 import { StudentRecommendations } from "@/components/student/StudentRecommendations";
 import { StudentReportCard } from "@/components/student/StudentReportCard";
 import { SendNotificationDialog } from "@/components/students/SendNotificationDialog";
+import { StudentPhotoUpload } from "@/components/students/StudentPhotoUpload";
 import { Student } from "@/hooks/useStudents";
 
 const predictionStyles = {
@@ -47,6 +48,7 @@ export default function StudentDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
+  const queryClient = useQueryClient();
 
   const { data: student, isLoading } = useQuery({
     queryKey: ["student", id],
@@ -60,10 +62,15 @@ export default function StudentDetail() {
         .maybeSingle();
 
       if (error) throw error;
-      return data as Student | null;
+      return data as (Student & { photo_url?: string | null }) | null;
     },
     enabled: !!user && !!id,
   });
+
+  const handlePhotoUpdated = () => {
+    queryClient.invalidateQueries({ queryKey: ["student", id] });
+    queryClient.invalidateQueries({ queryKey: ["students"] });
+  };
 
   if (authLoading || isLoading) {
     return (
@@ -136,11 +143,13 @@ export default function StudentDetail() {
             <Card className="card-shadow animate-slide-up">
               <CardContent className="p-6">
                 <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
-                  <Avatar className="h-24 w-24 border-4 border-primary/10">
-                    <AvatarFallback className="bg-primary/5 text-primary text-2xl font-semibold">
-                      {getInitials(student.name)}
-                    </AvatarFallback>
-                  </Avatar>
+                  <StudentPhotoUpload
+                    studentId={student.id}
+                    studentName={student.name}
+                    currentPhotoUrl={student.photo_url}
+                    onPhotoUpdated={handlePhotoUpdated}
+                    size="lg"
+                  />
                   <div className="flex-1 space-y-2">
                     <div className="flex flex-wrap items-center gap-3">
                       <h1 className="text-2xl font-bold">{student.name}</h1>

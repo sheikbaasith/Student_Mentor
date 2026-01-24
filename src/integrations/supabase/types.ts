@@ -99,6 +99,7 @@ export type Database = {
           internal_marks: number | null
           name: string
           phone: string | null
+          photo_url: string | null
           prediction: string
           roll_no: string | null
           teacher_id: string
@@ -119,6 +120,7 @@ export type Database = {
           internal_marks?: number | null
           name: string
           phone?: string | null
+          photo_url?: string | null
           prediction?: string
           roll_no?: string | null
           teacher_id: string
@@ -139,6 +141,7 @@ export type Database = {
           internal_marks?: number | null
           name?: string
           phone?: string | null
+          photo_url?: string | null
           prediction?: string
           roll_no?: string | null
           teacher_id?: string
