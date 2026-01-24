@@ -19,7 +19,9 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Student, useStudents } from "@/hooks/useStudents";
 import { useCourses } from "@/hooks/useCourses";
-import { Loader2, User, GraduationCap, FileText } from "lucide-react";
+import { Loader2, User, GraduationCap, FileText, Camera } from "lucide-react";
+import { StudentPhotoUpload } from "./StudentPhotoUpload";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface EditStudentDialogProps {
   student: Student;
@@ -32,7 +34,7 @@ const bloodGroups = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDialogProps) {
   const { updateStudent, isUpdating } = useStudents();
   const { courses } = useCourses();
-
+  const queryClient = useQueryClient();
   // Personal details
   const [name, setName] = useState(student.name);
   const [email, setEmail] = useState(student.email);
@@ -127,10 +129,14 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
 
         <form onSubmit={handleSubmit}>
           <Tabs defaultValue="personal" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="personal" className="gap-1">
                 <User className="h-3 w-3" />
                 Personal
+              </TabsTrigger>
+              <TabsTrigger value="photo" className="gap-1">
+                <Camera className="h-3 w-3" />
+                Photo
               </TabsTrigger>
               <TabsTrigger value="academic" className="gap-1">
                 <FileText className="h-3 w-3" />
@@ -227,6 +233,26 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
                   placeholder="123 Main St, City, Country"
                   maxLength={255}
                 />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="photo" className="space-y-4 mt-4">
+              <div className="flex flex-col items-center justify-center py-6 space-y-4">
+                <StudentPhotoUpload
+                  studentId={student.id}
+                  studentName={student.name}
+                  currentPhotoUrl={student.photo_url}
+                  onPhotoUpdated={() => {
+                    queryClient.invalidateQueries({ queryKey: ["students"] });
+                  }}
+                  size="lg"
+                />
+                <div className="text-center">
+                  <p className="font-medium">{student.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    Click the photo to upload or change
+                  </p>
+                </div>
               </div>
             </TabsContent>
 
