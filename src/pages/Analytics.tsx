@@ -1,19 +1,23 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useStudents } from "@/hooks/useStudents";
+import { useStudents, Student } from "@/hooks/useStudents";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { PerformanceChart } from "@/components/dashboard/PerformanceChart";
 import { GradeDistribution } from "@/components/dashboard/GradeDistribution";
 import { RiskBreakdown } from "@/components/dashboard/RiskBreakdown";
+import { StudentComparisonChart } from "@/components/analytics/StudentComparisonChart";
+import { StudentSelector } from "@/components/analytics/StudentSelector";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Loader2, TrendingUp, TrendingDown, Minus } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, TrendingUp, TrendingDown, Minus, BarChart3, Users } from "lucide-react";
 
 export default function Analytics() {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { students, isLoading } = useStudents();
+  const [selectedStudents, setSelectedStudents] = useState<Student[]>([]);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -130,13 +134,43 @@ export default function Analytics() {
             </div>
 
             {students.length > 0 ? (
-              <>
-                <div className="grid gap-6 lg:grid-cols-2">
-                  <PerformanceChart data={performanceData} />
-                  <GradeDistribution data={gradeDistribution} />
-                </div>
-                <RiskBreakdown data={riskData} />
-              </>
+              <Tabs defaultValue="overview" className="space-y-6">
+                <TabsList>
+                  <TabsTrigger value="overview" className="gap-2">
+                    <BarChart3 className="h-4 w-4" />
+                    Overview
+                  </TabsTrigger>
+                  <TabsTrigger value="comparison" className="gap-2">
+                    <Users className="h-4 w-4" />
+                    Student Comparison
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="overview" className="space-y-6">
+                  <div className="grid gap-6 lg:grid-cols-2">
+                    <PerformanceChart data={performanceData} />
+                    <GradeDistribution data={gradeDistribution} />
+                  </div>
+                  <RiskBreakdown data={riskData} />
+                </TabsContent>
+
+                <TabsContent value="comparison" className="space-y-6">
+                  <Card className="card-shadow">
+                    <CardHeader>
+                      <CardTitle>Compare Students</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <StudentSelector
+                        students={students}
+                        selectedStudents={selectedStudents}
+                        onSelectionChange={setSelectedStudents}
+                        maxSelection={5}
+                      />
+                    </CardContent>
+                  </Card>
+                  <StudentComparisonChart students={selectedStudents} />
+                </TabsContent>
+              </Tabs>
             ) : (
               <Card className="card-shadow p-12 text-center">
                 <p className="text-lg font-medium">No data available</p>
