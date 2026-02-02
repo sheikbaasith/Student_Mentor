@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Settings as SettingsIcon, User, Bell, Shield, Palette } from "lucide-react";
+import { Loader2, Settings as SettingsIcon, User, Bell, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ChangePasswordDialog } from "@/components/settings/ChangePasswordDialog";
 
 export default function Settings() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -142,9 +143,7 @@ export default function Settings() {
                 <CardDescription>Manage your account security</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <Button variant="outline" className="w-full sm:w-auto">
-                  Change Password
-                </Button>
+                <ChangePasswordDialog />
                 <Separator />
                 <div className="pt-2">
                   <Button

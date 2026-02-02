@@ -2,27 +2,37 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { lovable } from "@/integrations/lovable/index";
 
 export function GoogleSignInButton() {
-  const { signInWithGoogle } = useAuth();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
-    const { error } = await signInWithGoogle();
-    
-    if (error) {
+    try {
+      const result = await lovable.auth.signInWithOAuth("google", {
+        redirect_uri: window.location.origin,
+      });
+      
+      if (result.error) {
+        setIsLoading(false);
+        toast({
+          title: "Error",
+          description: result.error.message,
+          variant: "destructive",
+        });
+      }
+      // Note: Don't reset loading state on success as user will be redirected
+    } catch (error) {
       setIsLoading(false);
       toast({
         title: "Error",
-        description: error.message,
+        description: error instanceof Error ? error.message : "Failed to sign in with Google",
         variant: "destructive",
       });
     }
-    // Note: Don't reset loading state on success as user will be redirected
   };
 
   return (

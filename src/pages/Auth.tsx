@@ -10,6 +10,7 @@ import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
+import { PhoneSignInButton } from "@/components/auth/PhoneSignInButton";
 import { Separator } from "@/components/ui/separator";
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
@@ -560,8 +561,13 @@ const Auth = () => {
             </motion.div>
           )}
 
-          {/* Google Sign In */}
-          {!isForgot && <GoogleSignInButton />}
+          {/* Social Sign In Options */}
+          {!isForgot && (
+            <div className="space-y-3">
+              <GoogleSignInButton />
+              <PhoneSignInButton />
+            </div>
+          )}
 
           <motion.div 
             className="text-center space-y-2"
