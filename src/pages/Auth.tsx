@@ -336,38 +336,58 @@ const Auth = () => {
           {/* Mobile Logo */}
           <motion.div 
             className="lg:hidden flex items-center gap-2 justify-center"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5 }}
+            initial={{ scale: 0.5, opacity: 0, y: -30 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, type: "spring", bounce: 0.4 }}
           >
             <motion.div 
               className="h-10 w-10 rounded-lg gradient-primary flex items-center justify-center"
-              whileHover={{ rotate: 10 }}
+              whileHover={{ rotate: 15, scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              animate={{ rotate: [0, -5, 5, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
             >
               <GraduationCap className="h-6 w-6 text-white" />
             </motion.div>
-            <span className="font-bold text-xl">StudentPredict</span>
+            <motion.span 
+              className="font-bold text-xl"
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+            >
+              StudentPredict
+            </motion.span>
           </motion.div>
 
           <AnimatePresence mode="wait">
             <motion.div 
               key={authView}
               className="text-center lg:text-left"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 10 }}
-              transition={{ duration: 0.3 }}
+              initial={{ opacity: 0, y: -20, filter: "blur(8px)" }}
+              animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              exit={{ opacity: 0, y: 20, filter: "blur(8px)" }}
+              transition={{ duration: 0.4, ease: "easeOut" }}
             >
-              <h2 className="text-2xl font-bold">
+              <motion.h2 
+                className="text-2xl font-bold"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.1, duration: 0.5 }}
+              >
                 {isForgot ? "Reset your password" : isLogin ? "Welcome back" : "Create your account"}
-              </h2>
-              <p className="text-muted-foreground mt-2">
+              </motion.h2>
+              <motion.p 
+                className="text-muted-foreground mt-2"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+              >
                 {isForgot
                   ? "Enter your email to receive a reset link"
                   : isLogin
                   ? "Enter your credentials to access your dashboard"
                   : "Start predicting student performance today"}
-              </p>
+              </motion.p>
             </motion.div>
           </AnimatePresence>
 
@@ -435,19 +455,22 @@ const Auth = () => {
 
             <motion.div 
               className="space-y-2"
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1, duration: 0.4 }}
+              initial={{ opacity: 0, x: -30, filter: "blur(4px)" }}
+              animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+              transition={{ delay: 0.15, duration: 0.5, ease: "easeOut" }}
+              whileHover={{ scale: 1.01 }}
             >
               <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="teacher@university.edu"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className={errors.email ? "border-danger" : ""}
-              />
+              <motion.div whileFocus={{ scale: 1.02 }}>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="teacher@university.edu"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={`${errors.email ? "border-danger" : ""} transition-shadow duration-300 focus:shadow-lg focus:shadow-primary/20`}
+                />
+              </motion.div>
               {errors.email && (
                 <motion.p 
                   className="text-sm text-danger"
@@ -461,12 +484,13 @@ const Auth = () => {
 
             <AnimatePresence mode="wait">
               {!isForgot && (
-                <motion.div 
+              <motion.div 
                   className="space-y-2"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 20 }}
-                  transition={{ delay: 0.2, duration: 0.4 }}
+                  initial={{ opacity: 0, x: -30, filter: "blur(4px)" }}
+                  animate={{ opacity: 1, x: 0, filter: "blur(0px)" }}
+                  exit={{ opacity: 0, x: 30, filter: "blur(4px)" }}
+                  transition={{ delay: 0.25, duration: 0.5, ease: "easeOut" }}
+                  whileHover={{ scale: 1.01 }}
                 >
                   <Label htmlFor="password">Password</Label>
                   <div className="relative">
@@ -476,7 +500,7 @@ const Auth = () => {
                       placeholder="••••••••"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className={errors.password ? "border-danger pr-10" : "pr-10"}
+                      className={`${errors.password ? "border-danger pr-10" : "pr-10"} transition-shadow duration-300 focus:shadow-lg focus:shadow-primary/20`}
                     />
                     <motion.button
                       type="button"
@@ -510,9 +534,13 @@ const Auth = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3, duration: 0.4 }}
             >
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.97 }}
+              >
               <Button
                 type="submit"
-                className="w-full gradient-primary text-primary-foreground hover:opacity-90"
+                className="w-full gradient-primary text-primary-foreground hover:opacity-90 transition-shadow duration-300 hover:shadow-xl hover:shadow-primary/30"
                 disabled={isSubmitting}
               >
                 <AnimatePresence mode="wait">
@@ -539,6 +567,7 @@ const Auth = () => {
                   )}
                 </AnimatePresence>
               </Button>
+              </motion.div>
             </motion.div>
           </form>
 
@@ -554,19 +583,33 @@ const Auth = () => {
                 <Separator className="w-full" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">
+                <motion.span 
+                  className="bg-background px-2 text-muted-foreground"
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.4, duration: 0.3 }}
+                >
                   Or continue with
-                </span>
+                </motion.span>
               </div>
             </motion.div>
           )}
 
           {/* Social Sign In Options */}
           {!isForgot && (
-            <div className="space-y-3">
-              <GoogleSignInButton />
-              <PhoneSignInButton />
-            </div>
+            <motion.div 
+              className="space-y-3"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.45, duration: 0.4 }}
+            >
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <GoogleSignInButton />
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <PhoneSignInButton />
+              </motion.div>
+            </motion.div>
           )}
 
           <motion.div 
