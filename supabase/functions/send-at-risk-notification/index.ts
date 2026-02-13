@@ -6,7 +6,7 @@ const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
 interface AtRiskNotificationRequest {
@@ -114,6 +114,19 @@ const handler = async (req: Request): Promise<Response> => {
       subject: `Academic Performance Alert for ${studentName}`,
       html: emailHtml,
     });
+
+    console.log("Resend response:", JSON.stringify(emailResponse));
+
+    if (emailResponse.error) {
+      console.error("Resend error:", emailResponse.error);
+      return new Response(
+        JSON.stringify({ error: emailResponse.error.message || "Failed to send email" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
 
     console.log("Email sent successfully:", emailResponse);
 
