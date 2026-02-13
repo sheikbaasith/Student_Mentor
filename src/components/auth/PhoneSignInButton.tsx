@@ -1,12 +1,15 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, Loader2, ArrowLeft } from "lucide-react";
+import { Phone, Loader2, ArrowLeft, ChevronDown, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { countryCodes, type CountryCode } from "@/data/countryCodes";
 
 type PhoneAuthStep = "phone" | "otp";
 
@@ -17,6 +20,21 @@ export function PhoneSignInButton() {
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState<CountryCode>(countryCodes[0]);
+  const [countrySearch, setCountrySearch] = useState("");
+  const [countryOpen, setCountryOpen] = useState(false);
+
+  const filteredCountries = countryCodes.filter(
+    (c) =>
+      c.name.toLowerCase().includes(countrySearch.toLowerCase()) ||
+      c.dial.includes(countrySearch) ||
+      c.code.toLowerCase().includes(countrySearch.toLowerCase())
+  );
+
+  const getFullPhone = () => {
+    const digits = phone.replace(/\D/g, "");
+    return `${selectedCountry.dial}${digits}`;
+  };
 
   const handleSendOtp = async () => {
     if (!phone.trim()) {
@@ -30,22 +48,15 @@ export function PhoneSignInButton() {
 
     setIsLoading(true);
     try {
-      const formattedPhone = phone.startsWith("+") ? phone : `+${phone}`;
+      const formattedPhone = getFullPhone();
       const { error } = await supabase.auth.signInWithOtp({
         phone: formattedPhone,
       });
 
       if (error) {
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        });
+        toast({ title: "Error", description: error.message, variant: "destructive" });
       } else {
-        toast({
-          title: "OTP Sent!",
-          description: "Check your phone for the verification code.",
-        });
+        toast({ title: "OTP Sent!", description: "Check your phone for the verification code." });
         setStep("otp");
       }
     } catch (error) {
@@ -61,17 +72,13 @@ export function PhoneSignInButton() {
 
   const handleVerifyOtp = async () => {
     if (otp.length !== 6) {
-      toast({
-        title: "Error",
-        description: "Please enter the complete 6-digit code",
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: "Please enter the complete 6-digit code", variant: "destructive" });
       return;
     }
 
     setIsLoading(true);
     try {
-      const formattedPhone = phone.startsWith("+") ? phone : `+${phone}`;
+      const formattedPhone = getFullPhone();
       const { error } = await supabase.auth.verifyOtp({
         phone: formattedPhone,
         token: otp,
@@ -79,16 +86,9 @@ export function PhoneSignInButton() {
       });
 
       if (error) {
-        toast({
-          title: "Verification Failed",
-          description: error.message,
-          variant: "destructive",
-        });
+        toast({ title: "Verification Failed", description: error.message, variant: "destructive" });
       } else {
-        toast({
-          title: "Success!",
-          description: "You have been signed in successfully.",
-        });
+        toast({ title: "Success!", description: "You have been signed in successfully." });
       }
     } catch (error) {
       toast({
@@ -154,13 +154,7 @@ export function PhoneSignInButton() {
       className="space-y-4 p-4 border rounded-lg bg-muted/30"
     >
       <div className="flex items-center gap-2">
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          onClick={handleBack}
-          className="h-8 w-8"
-        >
+        <Button type="button" variant="ghost" size="icon" onClick={handleBack} className="h-8 w-8">
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h3 className="font-medium flex items-center gap-2">
@@ -180,23 +174,64 @@ export function PhoneSignInButton() {
           >
             <div className="space-y-2">
               <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                type="tel"
-                placeholder="+1 234 567 8900"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
+              <div className="flex gap-2">
+                <Popover open={countryOpen} onOpenChange={setCountryOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-[120px] justify-between px-2 shrink-0"
+                    >
+                      <span className="flex items-center gap-1 text-sm">
+                        <span>{selectedCountry.flag}</span>
+                        <span>{selectedCountry.dial}</span>
+                      </span>
+                      <ChevronDown className="h-3 w-3 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[260px] p-0" align="start">
+                    <div className="flex items-center border-b px-3 py-2">
+                      <Search className="h-4 w-4 text-muted-foreground mr-2" />
+                      <input
+                        className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+                        placeholder="Search country..."
+                        value={countrySearch}
+                        onChange={(e) => setCountrySearch(e.target.value)}
+                      />
+                    </div>
+                    <ScrollArea className="h-[200px]">
+                      {filteredCountries.map((country) => (
+                        <button
+                          key={country.code}
+                          className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-accent transition-colors"
+                          onClick={() => {
+                            setSelectedCountry(country);
+                            setCountryOpen(false);
+                            setCountrySearch("");
+                          }}
+                        >
+                          <span>{country.flag}</span>
+                          <span className="flex-1 text-left">{country.name}</span>
+                          <span className="text-muted-foreground">{country.dial}</span>
+                        </button>
+                      ))}
+                    </ScrollArea>
+                  </PopoverContent>
+                </Popover>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="234 567 8900"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  className="flex-1"
+                />
+              </div>
               <p className="text-xs text-muted-foreground">
-                Include country code (e.g., +1 for US)
+                Select your country and enter your phone number
               </p>
             </div>
-            <Button
-              type="button"
-              className="w-full"
-              onClick={handleSendOtp}
-              disabled={isLoading}
-            >
+            <Button type="button" className="w-full" onClick={handleSendOtp} disabled={isLoading}>
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -218,11 +253,7 @@ export function PhoneSignInButton() {
             <div className="space-y-2">
               <Label>Enter 6-digit code</Label>
               <div className="flex justify-center">
-                <InputOTP
-                  maxLength={6}
-                  value={otp}
-                  onChange={(value) => setOtp(value)}
-                >
+                <InputOTP maxLength={6} value={otp} onChange={(value) => setOtp(value)}>
                   <InputOTPGroup>
                     <InputOTPSlot index={0} />
                     <InputOTPSlot index={1} />
@@ -234,25 +265,14 @@ export function PhoneSignInButton() {
                 </InputOTP>
               </div>
               <p className="text-xs text-muted-foreground text-center">
-                Code sent to {phone}
+                Code sent to {selectedCountry.flag} {getFullPhone()}
               </p>
             </div>
             <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex-1"
-                onClick={handleSendOtp}
-                disabled={isLoading}
-              >
+              <Button type="button" variant="outline" className="flex-1" onClick={handleSendOtp} disabled={isLoading}>
                 Resend Code
               </Button>
-              <Button
-                type="button"
-                className="flex-1"
-                onClick={handleVerifyOtp}
-                disabled={isLoading || otp.length !== 6}
-              >
+              <Button type="button" className="flex-1" onClick={handleVerifyOtp} disabled={isLoading || otp.length !== 6}>
                 {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -267,13 +287,7 @@ export function PhoneSignInButton() {
         )}
       </AnimatePresence>
 
-      <Button
-        type="button"
-        variant="ghost"
-        size="sm"
-        onClick={handleReset}
-        className="w-full text-muted-foreground"
-      >
+      <Button type="button" variant="ghost" size="sm" onClick={handleReset} className="w-full text-muted-foreground">
         Use a different method
       </Button>
     </motion.div>
