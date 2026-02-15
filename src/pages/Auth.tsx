@@ -9,9 +9,6 @@ import { Eye, EyeOff, GraduationCap, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
-import { PhoneSignInButton } from "@/components/auth/PhoneSignInButton";
-import { Separator } from "@/components/ui/separator";
 const emailSchema = z.string().email("Please enter a valid email address");
 const passwordSchema = z.string().min(6, "Password must be at least 6 characters");
 
@@ -571,46 +568,6 @@ const Auth = () => {
             </motion.div>
           </form>
 
-          {/* Divider */}
-          {!isForgot && (
-            <motion.div
-              className="relative"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.35 }}
-            >
-              <div className="absolute inset-0 flex items-center">
-                <Separator className="w-full" />
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <motion.span 
-                  className="bg-background px-2 text-muted-foreground"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.4, duration: 0.3 }}
-                >
-                  Or continue with
-                </motion.span>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Social Sign In Options */}
-          {!isForgot && (
-            <motion.div 
-              className="space-y-3"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.45, duration: 0.4 }}
-            >
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <GoogleSignInButton />
-              </motion.div>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <PhoneSignInButton />
-              </motion.div>
-            </motion.div>
-          )}
 
           <motion.div 
             className="text-center space-y-2"

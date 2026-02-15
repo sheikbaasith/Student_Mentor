@@ -11,7 +11,7 @@ interface AuthContextType {
   signOut: () => Promise<void>;
   resetPassword: (email: string) => Promise<{ error: Error | null }>;
   updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
-  signInWithGoogle: () => Promise<{ error: Error | null }>;
+  
   resendVerificationEmail: () => Promise<{ error: Error | null }>;
   isEmailVerified: boolean;
 }
@@ -87,15 +87,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { error };
   };
 
-  const signInWithGoogle = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/`,
-      },
-    });
-    return { error };
-  };
 
   const resendVerificationEmail = async () => {
     if (!user?.email) {
@@ -124,7 +115,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut, 
       resetPassword, 
       updatePassword,
-      signInWithGoogle,
+      
       resendVerificationEmail,
       isEmailVerified,
     }}>
