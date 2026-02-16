@@ -9,10 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Settings as SettingsIcon, User, Bell, Shield, Palette } from "lucide-react";
+import { Loader2, Settings as SettingsIcon, User, Bell, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ChangePasswordDialog } from "@/components/settings/ChangePasswordDialog";
-import { ThemeSelector } from "@/components/settings/ThemeSelector";
 
 export default function Settings() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -93,20 +92,6 @@ export default function Settings() {
                     disabled
                   />
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Theme Settings */}
-            <Card className="card-shadow">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Palette className="h-5 w-5" />
-                  Color Theme
-                </CardTitle>
-                <CardDescription>Choose a color theme for the application</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ThemeSelector />
               </CardContent>
             </Card>
 
