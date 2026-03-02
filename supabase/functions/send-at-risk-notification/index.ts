@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { Resend } from "https://esm.sh/resend@2.0.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
 
@@ -9,43 +10,101 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 interface AtRiskNotificationRequest {
-  studentName: string;
-  studentEmail: string;
-  grade: number;
-  attendance: number;
-  teacherName?: string;
+  studentId: string;
   customMessage?: string;
 }
 
+const MAX_MESSAGE_LENGTH = 1000;
+
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { 
-      studentName, 
-      studentEmail, 
-      grade, 
-      attendance, 
-      teacherName = "Your Teacher",
-      customMessage 
-    }: AtRiskNotificationRequest = await req.json();
-
-    console.log(`Sending at-risk notification to ${studentEmail} for student ${studentName}`);
-
-    // Validate required fields
-    if (!studentName || !studentEmail) {
+    // Authenticate the caller
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader?.startsWith("Bearer ")) {
       return new Response(
-        JSON.stringify({ error: "Student name and email are required" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
+
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(
+      authHeader.replace("Bearer ", "")
+    );
+    if (claimsError || !claimsData?.claims) {
+      return new Response(
+        JSON.stringify({ error: "Unauthorized" }),
+        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    const userId = claimsData.claims.sub;
+
+    const { studentId, customMessage }: AtRiskNotificationRequest = await req.json();
+
+    // Validate inputs
+    if (!studentId) {
+      return new Response(
+        JSON.stringify({ error: "Student ID is required" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    if (customMessage && customMessage.length > MAX_MESSAGE_LENGTH) {
+      return new Response(
+        JSON.stringify({ error: "Custom message too long" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Verify student belongs to authenticated teacher (RLS handles this)
+    const { data: student, error: studentError } = await supabaseClient
+      .from("students")
+      .select("id, name, email, grade, attendance")
+      .eq("id", studentId)
+      .eq("teacher_id", userId)
+      .single();
+
+    if (studentError || !student) {
+      return new Response(
+        JSON.stringify({ error: "Student not found or unauthorized" }),
+        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      );
+    }
+
+    // Get teacher name from profile
+    const { data: profile } = await supabaseClient
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", userId)
+      .single();
+
+    const teacherName = escapeHtml(profile?.full_name || "Your Teacher");
+    const studentName = escapeHtml(student.name);
+    const grade = Number(student.grade);
+    const attendance = Number(student.attendance);
+    const sanitizedMessage = customMessage ? escapeHtml(customMessage.trim()) : null;
+
+    console.log(`Sending at-risk notification to ${student.email} for student ${student.name}`);
 
     const emailHtml = `
       <!DOCTYPE html>
@@ -64,7 +123,7 @@ const handler = async (req: Request): Promise<Response> => {
             <p style="font-size: 16px; margin-bottom: 20px;">Dear Parent/Guardian of <strong>${studentName}</strong>,</p>
             
             <p style="font-size: 15px; margin-bottom: 20px;">
-              We are reaching out to inform you that ${studentName} has been identified as needing additional academic support. Our AI-powered prediction system has flagged the following concerns:
+              We are reaching out to inform you that ${studentName} has been identified as needing additional academic support.
             </p>
             
             <div style="background: #fff3f3; border-left: 4px solid #ef4444; padding: 15px 20px; margin: 20px 0; border-radius: 4px;">
@@ -73,10 +132,10 @@ const handler = async (req: Request): Promise<Response> => {
               <p style="margin: 5px 0;"><strong>Attendance Rate:</strong> ${attendance}%</p>
             </div>
             
-            ${customMessage ? `
+            ${sanitizedMessage ? `
             <div style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 15px 20px; margin: 20px 0; border-radius: 4px;">
               <h3 style="margin: 0 0 10px 0; color: #1e40af; font-size: 16px;">Message from ${teacherName}</h3>
-              <p style="margin: 0; white-space: pre-wrap;">${customMessage}</p>
+              <p style="margin: 0;">${sanitizedMessage}</p>
             </div>
             ` : ''}
             
@@ -90,7 +149,7 @@ const handler = async (req: Request): Promise<Response> => {
             </ul>
             
             <p style="font-size: 15px; margin-top: 25px;">
-              We believe that with proper support and intervention, ${studentName} can improve their academic performance. Please feel free to reach out to discuss this further.
+              We believe that with proper support and intervention, ${studentName} can improve their academic performance.
             </p>
             
             <p style="font-size: 15px; margin-top: 20px;">
@@ -102,7 +161,6 @@ const handler = async (req: Request): Promise<Response> => {
           
           <div style="text-align: center; padding: 20px; color: #888; font-size: 12px;">
             <p>This is an automated notification from the Student Performance Prediction System.</p>
-            <p>© ${new Date().getFullYear()} EduPredict. All rights reserved.</p>
           </div>
         </body>
       </html>
@@ -110,8 +168,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResponse = await resend.emails.send({
       from: "EduPredict <onboarding@resend.dev>",
-      to: [studentEmail],
-      subject: `Academic Performance Alert for ${studentName}`,
+      to: [student.email],
+      subject: `Academic Performance Alert for ${student.name}`,
       html: emailHtml,
     });
 
@@ -120,28 +178,20 @@ const handler = async (req: Request): Promise<Response> => {
     if (emailResponse.error) {
       console.error("Resend error:", emailResponse.error);
       return new Response(
-        JSON.stringify({ error: emailResponse.error.message || "Failed to send email" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
+        JSON.stringify({ error: "Failed to send email" }),
+        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
 
-    console.log("Email sent successfully:", emailResponse);
-
-    return new Response(JSON.stringify({ success: true, data: emailResponse }), {
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: any) {
     console.error("Error sending at-risk notification:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
+      JSON.stringify({ error: "An unexpected error occurred" }),
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   }
 };

@@ -34,11 +34,7 @@ export function SendNotificationDialog({ student, teacherName }: SendNotificatio
     try {
       const { data, error } = await supabase.functions.invoke("send-at-risk-notification", {
         body: {
-          studentName: student.name,
-          studentEmail: student.email,
-          grade: student.grade,
-          attendance: student.attendance,
-          teacherName: teacherName || "Your Teacher",
+          studentId: student.id,
           customMessage: customMessage.trim() || undefined,
         },
       });
