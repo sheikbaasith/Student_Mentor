@@ -1,7 +1,6 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Camera, Upload, X, Loader2, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Camera, X, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +28,7 @@ export function StudentPhotoUpload({
 }: StudentPhotoUploadProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -40,36 +40,54 @@ export function StudentPhotoUpload({
       .toUpperCase()
       .slice(0, 2);
 
+  // Generate a signed URL for private bucket access
+  const getSignedUrl = async (filePath: string) => {
+    const { data, error } = await supabase.storage
+      .from("student-photos")
+      .createSignedUrl(filePath, 3600); // 1 hour expiry
+    if (error || !data?.signedUrl) return null;
+    return data.signedUrl;
+  };
+
+  // Extract file path from a stored URL and get signed URL
+  const resolvePhotoUrl = async (url: string) => {
+    try {
+      // Extract the path after /student-photos/
+      const match = url.match(/student-photos\/(.+)$/);
+      if (match) {
+        const signed = await getSignedUrl(match[1]);
+        if (signed) setSignedUrl(signed);
+      }
+    } catch {
+      // fallback: no signed URL
+    }
+  };
+
+  // Resolve signed URL when currentPhotoUrl changes
+  useState(() => {
+    if (currentPhotoUrl) {
+      resolvePhotoUrl(currentPhotoUrl);
+    }
+  });
+
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith("image/")) {
-      toast({
-        title: "Invalid file type",
-        description: "Please select an image file.",
-        variant: "destructive",
-      });
+      toast({ title: "Invalid file type", description: "Please select an image file.", variant: "destructive" });
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: "File too large",
-        description: "Please select an image under 5MB.",
-        variant: "destructive",
-      });
+      toast({ title: "File too large", description: "Please select an image under 5MB.", variant: "destructive" });
       return;
     }
 
-    // Create preview
     const reader = new FileReader();
     reader.onload = (e) => setPreviewUrl(e.target?.result as string);
     reader.readAsDataURL(file);
 
-    // Upload to Supabase
     setIsUploading(true);
     try {
       const fileExt = file.name.split(".").pop();
@@ -81,30 +99,24 @@ export function StudentPhotoUpload({
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from("student-photos")
-        .getPublicUrl(filePath);
+      // Store the path-based reference, serve via signed URLs
+      const storedUrl = `student-photos/${filePath}`;
 
-      // Update student record
       const { error: updateError } = await supabase
         .from("students")
-        .update({ photo_url: publicUrl })
+        .update({ photo_url: storedUrl })
         .eq("id", studentId);
 
       if (updateError) throw updateError;
 
-      onPhotoUpdated(publicUrl);
-      toast({
-        title: "Photo uploaded",
-        description: "Student photo has been updated successfully.",
-      });
+      // Get signed URL for display
+      const signed = await getSignedUrl(filePath);
+      if (signed) setSignedUrl(signed);
+
+      onPhotoUpdated(storedUrl);
+      toast({ title: "Photo uploaded", description: "Student photo has been updated successfully." });
     } catch (error: any) {
-      toast({
-        title: "Upload failed",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Upload failed", description: error.message, variant: "destructive" });
       setPreviewUrl(null);
     } finally {
       setIsUploading(false);
@@ -122,23 +134,17 @@ export function StudentPhotoUpload({
       if (error) throw error;
 
       setPreviewUrl(null);
+      setSignedUrl(null);
       onPhotoUpdated("");
-      toast({
-        title: "Photo removed",
-        description: "Student photo has been removed.",
-      });
+      toast({ title: "Photo removed", description: "Student photo has been removed." });
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     } finally {
       setIsUploading(false);
     }
   };
 
-  const displayUrl = previewUrl || currentPhotoUrl;
+  const displayUrl = previewUrl || signedUrl || undefined;
 
   return (
     <div className="relative group">
@@ -150,22 +156,14 @@ export function StudentPhotoUpload({
         className="hidden"
       />
 
-      <motion.div
-        whileHover={{ scale: 1.02 }}
-        className="relative"
-      >
+      <motion.div whileHover={{ scale: 1.02 }} className="relative">
         <Avatar className={`${sizeClasses[size]} border-4 border-primary/10`}>
-          <AvatarImage src={displayUrl || undefined} alt={studentName} />
+          <AvatarImage src={displayUrl} alt={studentName} />
           <AvatarFallback className="bg-primary/5 text-primary font-semibold">
-            {isUploading ? (
-              <Loader2 className="h-6 w-6 animate-spin" />
-            ) : (
-              getInitials(studentName)
-            )}
+            {isUploading ? <Loader2 className="h-6 w-6 animate-spin" /> : getInitials(studentName)}
           </AvatarFallback>
         </Avatar>
 
-        {/* Upload overlay */}
         <AnimatePresence>
           <motion.div
             initial={{ opacity: 0 }}
@@ -178,12 +176,11 @@ export function StudentPhotoUpload({
         </AnimatePresence>
       </motion.div>
 
-      {/* Remove button */}
-      {displayUrl && !isUploading && (
+      {(previewUrl || signedUrl) && !isUploading && (
         <motion.button
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="absolute -top-1 -right-1 bg-danger text-white rounded-full p-1 shadow-md hover:bg-danger/90 transition-colors"
+          className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground rounded-full p-1 shadow-md hover:bg-destructive/90 transition-colors"
           onClick={handleRemovePhoto}
         >
           <X className="h-3 w-3" />
