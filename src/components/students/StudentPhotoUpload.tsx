@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Camera, X, Loader2 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,6 +18,21 @@ const sizeClasses = {
   md: "h-20 w-20",
   lg: "h-32 w-32",
 };
+
+// Extract the storage path from various URL formats
+function extractStoragePath(url: string): string | null {
+  // Already a relative path like "student-photos/studentId/file.jpg"
+  if (url.startsWith("student-photos/")) {
+    return url.replace("student-photos/", "");
+  }
+  // Full URL containing /student-photos/
+  const match = url.match(/\/student-photos\/(.+?)(?:\?|$)/);
+  if (match) return match[1];
+  // Try /object/public/student-photos/ pattern
+  const match2 = url.match(/\/object\/(?:public|sign)\/student-photos\/(.+?)(?:\?|$)/);
+  if (match2) return match2[1];
+  return null;
+}
 
 export function StudentPhotoUpload({
   studentId,
@@ -40,35 +55,28 @@ export function StudentPhotoUpload({
       .toUpperCase()
       .slice(0, 2);
 
-  // Generate a signed URL for private bucket access
-  const getSignedUrl = async (filePath: string) => {
+  const createSignedUrl = async (storagePath: string): Promise<string | null> => {
     const { data, error } = await supabase.storage
       .from("student-photos")
-      .createSignedUrl(filePath, 3600); // 1 hour expiry
+      .createSignedUrl(storagePath, 3600);
     if (error || !data?.signedUrl) return null;
     return data.signedUrl;
   };
 
-  // Extract file path from a stored URL and get signed URL
-  const resolvePhotoUrl = async (url: string) => {
-    try {
-      // Extract the path after /student-photos/
-      const match = url.match(/student-photos\/(.+)$/);
-      if (match) {
-        const signed = await getSignedUrl(match[1]);
-        if (signed) setSignedUrl(signed);
-      }
-    } catch {
-      // fallback: no signed URL
-    }
-  };
-
   // Resolve signed URL when currentPhotoUrl changes
-  useState(() => {
-    if (currentPhotoUrl) {
-      resolvePhotoUrl(currentPhotoUrl);
+  useEffect(() => {
+    if (!currentPhotoUrl) {
+      setSignedUrl(null);
+      return;
     }
-  });
+
+    const path = extractStoragePath(currentPhotoUrl);
+    if (path) {
+      createSignedUrl(path).then((url) => {
+        if (url) setSignedUrl(url);
+      });
+    }
+  }, [currentPhotoUrl]);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -84,6 +92,7 @@ export function StudentPhotoUpload({
       return;
     }
 
+    // Show local preview immediately
     const reader = new FileReader();
     reader.onload = (e) => setPreviewUrl(e.target?.result as string);
     reader.readAsDataURL(file);
@@ -99,21 +108,21 @@ export function StudentPhotoUpload({
 
       if (uploadError) throw uploadError;
 
-      // Store the path-based reference, serve via signed URLs
-      const storedUrl = `student-photos/${filePath}`;
+      // Store the relative path reference in DB
+      const storedPath = `student-photos/${filePath}`;
 
       const { error: updateError } = await supabase
         .from("students")
-        .update({ photo_url: storedUrl })
+        .update({ photo_url: storedPath })
         .eq("id", studentId);
 
       if (updateError) throw updateError;
 
-      // Get signed URL for display
-      const signed = await getSignedUrl(filePath);
+      // Generate signed URL for display
+      const signed = await createSignedUrl(filePath);
       if (signed) setSignedUrl(signed);
 
-      onPhotoUpdated(storedUrl);
+      onPhotoUpdated(storedPath);
       toast({ title: "Photo uploaded", description: "Student photo has been updated successfully." });
     } catch (error: any) {
       toast({ title: "Upload failed", description: error.message, variant: "destructive" });
