@@ -159,6 +159,15 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
             </p>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by name, parent..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 w-[200px] bg-muted/50 border-0 focus-visible:ring-1"
+              />
+            </div>
             <Filter className="h-4 w-4 text-muted-foreground" />
             <Select value={courseFilter} onValueChange={setCourseFilter}>
               <SelectTrigger className="w-[180px]">
