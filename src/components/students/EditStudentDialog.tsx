@@ -43,6 +43,8 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
   const [rollNo, setRollNo] = useState(student.roll_no || "");
   const [dateOfBirth, setDateOfBirth] = useState(student.date_of_birth || "");
   const [bloodGroup, setBloodGroup] = useState(student.blood_group || "");
+  const [fatherName, setFatherName] = useState(student.father_name || "");
+  const [motherName, setMotherName] = useState(student.mother_name || "");
 
   // Academic details
   const [grade, setGrade] = useState(student.grade.toString());
@@ -62,6 +64,8 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
     setRollNo(student.roll_no || "");
     setDateOfBirth(student.date_of_birth || "");
     setBloodGroup(student.blood_group || "");
+    setFatherName(student.father_name || "");
+    setMotherName(student.mother_name || "");
     setGrade(student.grade.toString());
     setAttendance(student.attendance.toString());
     setInternalMarks(student.internal_marks.toString());
@@ -99,6 +103,8 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
         roll_no: rollNo.trim() || null,
         date_of_birth: dateOfBirth || null,
         blood_group: bloodGroup || null,
+        father_name: fatherName.trim() || null,
+        mother_name: motherName.trim() || null,
         grade: gradeNum,
         attendance: attendanceNum,
         internal_marks: parseFloat(internalMarks) || 0,
@@ -233,6 +239,29 @@ export function EditStudentDialog({ student, open, onOpenChange }: EditStudentDi
                   placeholder="123 Main St, City, Country"
                   maxLength={255}
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fatherName">Father's Name</Label>
+                  <Input
+                    id="fatherName"
+                    value={fatherName}
+                    onChange={(e) => setFatherName(e.target.value)}
+                    placeholder="Father's full name"
+                    maxLength={100}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="motherName">Mother's Name</Label>
+                  <Input
+                    id="motherName"
+                    value={motherName}
+                    onChange={(e) => setMotherName(e.target.value)}
+                    placeholder="Mother's full name"
+                    maxLength={100}
+                  />
+                </div>
               </div>
             </TabsContent>
 
