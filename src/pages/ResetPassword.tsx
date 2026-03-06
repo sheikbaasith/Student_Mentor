@@ -149,7 +149,7 @@ const ResetPassword = () => {
           <div className="h-10 w-10 rounded-lg bg-white/20 flex items-center justify-center">
             <GraduationCap className="h-6 w-6 text-white" />
           </div>
-          <span className="text-white font-bold text-xl">StudentPredict</span>
+          <span className="text-white font-bold text-xl">EduTrack</span>
         </motion.div>
         
         <motion.div 
@@ -179,7 +179,7 @@ const ResetPassword = () => {
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8, duration: 0.6 }}
         >
-          © 2024 StudentPredict. Final Year Project.
+          © 2024 EduTrack. Final Year Project.
         </motion.p>
       </motion.div>
 
@@ -201,7 +201,7 @@ const ResetPassword = () => {
             <div className="h-10 w-10 rounded-lg gradient-primary flex items-center justify-center">
               <GraduationCap className="h-6 w-6 text-white" />
             </div>
-            <span className="font-bold text-xl">StudentPredict</span>
+            <span className="font-bold text-xl">EduTrack</span>
           </motion.div>
 
           <motion.div 
