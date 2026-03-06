@@ -39,10 +39,10 @@ export function Header() {
           <div className="flex items-center gap-4 md:gap-6">
             <div className="flex items-center gap-2">
               <div className="h-8 w-8 rounded-lg gradient-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-bold text-sm">SP</span>
+              <span className="text-primary-foreground font-bold text-sm">ET</span>
               </div>
               <span className="font-bold text-lg hidden sm:inline-block">
-                StudentPredict
+                EduTrack
               </span>
             </div>
           </div>
