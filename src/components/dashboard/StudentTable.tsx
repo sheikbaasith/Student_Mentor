@@ -19,7 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
-import { Trash2, Loader2, ChevronDown, ChevronUp, Eye, BookOpen, Pencil, Filter, Mail } from "lucide-react";
+import { Trash2, Loader2, ChevronDown, ChevronUp, Eye, BookOpen, Pencil, Filter, Mail, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Student, useStudents } from "@/hooks/useStudents";
 import { useCourses } from "@/hooks/useCourses";
 import { useNavigate } from "react-router-dom";
@@ -58,6 +59,7 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
     const [courseFilter, setCourseFilter] = useState<string>("all");
     const [predictionFilter, setPredictionFilter] = useState<string>("all");
+    const [searchQuery, setSearchQuery] = useState<string>("");
     const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
     const navigate = useNavigate();
 
@@ -89,8 +91,16 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
       const matchesPrediction = predictionFilter === "all" 
         ? true 
         : student.prediction === predictionFilter;
+
+      const query = searchQuery.toLowerCase().trim();
+      const matchesSearch = !query || 
+        student.name.toLowerCase().includes(query) ||
+        student.email.toLowerCase().includes(query) ||
+        (student.father_name?.toLowerCase().includes(query) ?? false) ||
+        (student.mother_name?.toLowerCase().includes(query) ?? false) ||
+        (student.roll_no?.toLowerCase().includes(query) ?? false);
       
-      return matchesCourse && matchesPrediction;
+      return matchesCourse && matchesPrediction && matchesSearch;
     });
 
     const getCourseName = (courseId: string | null) => {
