@@ -230,6 +230,22 @@ export default function StudentDetail() {
                     <span className="font-medium">{student.roll_no || "N/A"}</span>
                   </div>
                   <Separator />
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Father's Name
+                    </span>
+                    <span className="font-medium">{student.father_name || "N/A"}</span>
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <span className="text-muted-foreground flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Mother's Name
+                    </span>
+                    <span className="font-medium">{student.mother_name || "N/A"}</span>
+                  </div>
+                  <Separator />
                   <div className="flex items-start justify-between">
                     <span className="text-muted-foreground flex items-center gap-2">
                       <MapPin className="h-4 w-4" />
