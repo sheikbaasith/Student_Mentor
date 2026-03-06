@@ -10,6 +10,8 @@ export interface Student {
   email: string;
   phone: string | null;
   address: string | null;
+  father_name: string | null;
+  mother_name: string | null;
   grade: number;
   attendance: number;
   prediction: "excelling" | "on-track" | "at-risk";
@@ -30,6 +32,8 @@ export interface NewStudent {
   email: string;
   phone?: string;
   address?: string;
+  father_name?: string;
+  mother_name?: string;
   grade: number;
   attendance: number;
   date_of_birth?: string;
@@ -89,6 +93,8 @@ export function useStudents() {
           email: student.email,
           phone: student.phone || null,
           address: student.address || null,
+          father_name: student.father_name || null,
+          mother_name: student.mother_name || null,
           grade: student.grade,
           attendance: student.attendance,
           date_of_birth: student.date_of_birth || null,

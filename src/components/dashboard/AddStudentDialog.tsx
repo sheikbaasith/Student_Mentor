@@ -34,6 +34,8 @@ export function AddStudentDialog() {
     date_of_birth: "",
     blood_group: "",
     roll_no: "",
+    father_name: "",
+    mother_name: "",
     internal_marks: 0,
     external_marks: 0,
   });
@@ -54,6 +56,8 @@ export function AddStudentDialog() {
           date_of_birth: "",
           blood_group: "",
           roll_no: "",
+          father_name: "",
+          mother_name: "",
           internal_marks: 0,
           external_marks: 0,
         });
@@ -159,6 +163,27 @@ export function AddStudentDialog() {
               value={formData.address || ""}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="father_name">Father's Name</Label>
+              <Input
+                id="father_name"
+                placeholder="Father's full name"
+                value={formData.father_name || ""}
+                onChange={(e) => setFormData({ ...formData, father_name: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="mother_name">Mother's Name</Label>
+              <Input
+                id="mother_name"
+                placeholder="Mother's full name"
+                value={formData.mother_name || ""}
+                onChange={(e) => setFormData({ ...formData, mother_name: e.target.value })}
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

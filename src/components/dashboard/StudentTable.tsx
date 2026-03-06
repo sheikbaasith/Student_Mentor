@@ -1,4 +1,4 @@
-import { forwardRef, useState } from "react";
+import { forwardRef, useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -8,7 +8,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -57,7 +58,25 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
     const [editingStudent, setEditingStudent] = useState<Student | null>(null);
     const [courseFilter, setCourseFilter] = useState<string>("all");
     const [predictionFilter, setPredictionFilter] = useState<string>("all");
+    const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
     const navigate = useNavigate();
+
+    // Resolve signed URLs for student photos
+    useEffect(() => {
+      const resolveUrls = async () => {
+        const studentsWithPhotos = students.filter(s => s.photo_url);
+        const urls: Record<string, string> = {};
+        for (const s of studentsWithPhotos) {
+          const path = s.photo_url!.replace("student-photos/", "");
+          const { data } = await supabase.storage
+            .from("student-photos")
+            .createSignedUrl(path, 3600);
+          if (data?.signedUrl) urls[s.id] = data.signedUrl;
+        }
+        setSignedUrls(urls);
+      };
+      if (students.length > 0) resolveUrls();
+    }, [students]);
 
     // Filter students by selected course and prediction status
     const filteredStudents = students.filter(student => {
@@ -205,6 +224,7 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Avatar className="h-10 w-10 border-2 border-primary/10">
+                        <AvatarImage src={signedUrls[student.id]} alt={student.name} />
                         <AvatarFallback className="bg-primary/5 text-primary font-medium">
                           {getInitials(student.name)}
                         </AvatarFallback>

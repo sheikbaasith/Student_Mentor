@@ -94,9 +94,11 @@ export type Database = {
           date_of_birth: string | null
           email: string
           external_marks: number | null
+          father_name: string | null
           grade: number
           id: string
           internal_marks: number | null
+          mother_name: string | null
           name: string
           phone: string | null
           photo_url: string | null
@@ -115,9 +117,11 @@ export type Database = {
           date_of_birth?: string | null
           email: string
           external_marks?: number | null
+          father_name?: string | null
           grade?: number
           id?: string
           internal_marks?: number | null
+          mother_name?: string | null
           name: string
           phone?: string | null
           photo_url?: string | null
@@ -136,9 +140,11 @@ export type Database = {
           date_of_birth?: string | null
           email?: string
           external_marks?: number | null
+          father_name?: string | null
           grade?: number
           id?: string
           internal_marks?: number | null
+          mother_name?: string | null
           name?: string
           phone?: string | null
           photo_url?: string | null

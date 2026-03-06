@@ -140,7 +140,7 @@ const Auth = () => {
         } else {
           toast({
             title: "Account created!",
-            description: "Welcome to StudentPredict. You are now logged in.",
+            description: "Welcome to EduTrack. You are now logged in.",
           });
         }
       }
@@ -253,7 +253,7 @@ const Auth = () => {
           >
             <GraduationCap className="h-6 w-6 text-white" />
           </motion.div>
-          <span className="text-white font-bold text-xl">StudentPredict</span>
+          <span className="text-white font-bold text-xl">EduTrack</span>
         </motion.div>
         
         <motion.div 
@@ -318,7 +318,7 @@ const Auth = () => {
           animate={{ opacity: 1 }}
           transition={{ delay: 1.2, duration: 0.6 }}
         >
-          © 2024 StudentPredict. Final Year Project.
+          © 2024 EduTrack. Final Year Project.
         </motion.p>
       </motion.div>
 
@@ -352,7 +352,7 @@ const Auth = () => {
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3, duration: 0.5 }}
             >
-              StudentPredict
+              EduTrack
             </motion.span>
           </motion.div>
 
