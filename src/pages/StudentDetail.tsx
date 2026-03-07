@@ -183,7 +183,7 @@ export default function StudentDetail() {
                   </div>
                   <div className="flex items-center gap-3">
                     {student.prediction === "at-risk" && (
-                      <SendNotificationDialog student={student} />
+                      <SendNotificationDialog student={student} courseName={getCourseName(student.course_id)} />
                     )}
                     <div className="text-right space-y-1">
                       <p className="text-sm text-muted-foreground">AI Confidence</p>
