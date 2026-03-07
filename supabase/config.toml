@@ -1,4 +1,1 @@
 project_id = "fdbrywfdkjorfmyjgbsm"
-
-[functions.send-at-risk-notification]
-verify_jwt = false

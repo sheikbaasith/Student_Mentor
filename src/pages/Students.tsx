@@ -7,6 +7,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { StudentTable } from "@/components/dashboard/StudentTable";
 import { AddStudentDialog } from "@/components/dashboard/AddStudentDialog";
 import { ImportStudentsDialog } from "@/components/dashboard/ImportStudentsDialog";
+import { NotificationHistoryPanel } from "@/components/students/NotificationHistoryPanel";
 import { Loader2 } from "lucide-react";
 
 export default function Students() {
@@ -52,6 +53,7 @@ export default function Students() {
               </div>
             </div>
             <StudentTable students={students} isLoading={isLoading} />
+            <NotificationHistoryPanel />
           </div>
         </main>
       </div>

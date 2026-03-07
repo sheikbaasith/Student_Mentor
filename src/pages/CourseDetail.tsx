@@ -55,14 +55,14 @@ import {
 
 const statusStyles: Record<string, string> = {
   active: "bg-success/10 text-success border-success/20",
-  upcoming: "bg-accent/10 text-accent border-accent/20",
+  upcoming: "bg-primary/10 text-primary border-primary/20",
   completed: "bg-muted text-muted-foreground",
   archived: "bg-muted/50 text-muted-foreground",
 };
 
 const predictionStyles = {
   excelling: "bg-success/10 text-success border-success/20",
-  "on-track": "bg-accent/10 text-accent border-accent/20",
+  "on-track": "bg-primary/10 text-primary border-primary/20",
   "at-risk": "bg-danger/10 text-danger border-danger/20",
 };
 
