@@ -41,7 +41,7 @@ interface StudentTableProps {
 
 const predictionStyles = {
   "excelling": "bg-success/10 text-success border-success/20 hover:bg-success/20",
-  "on-track": "bg-accent/10 text-accent border-accent/20 hover:bg-accent/20",
+  "on-track": "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20",
   "at-risk": "bg-danger/10 text-danger border-danger/20 hover:bg-danger/20",
 };
 
@@ -119,7 +119,7 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
 
   const getGradeColor = (grade: number) => {
     if (grade >= 85) return "text-success font-semibold";
-    if (grade >= 70) return "text-accent font-semibold";
+    if (grade >= 70) return "text-primary font-semibold";
     if (grade >= 60) return "text-warning font-semibold";
     return "text-danger font-semibold";
   };
@@ -286,7 +286,8 @@ export const StudentTable = forwardRef<HTMLDivElement, StudentTableProps>(
                     <div className="flex items-center gap-1">
                       {student.prediction === "at-risk" && (
                         <SendNotificationDialog 
-                          student={student} 
+                          student={student}
+                          courseName={getCourseName(student.course_id) || "Not Assigned"}
                         />
                       )}
                       <Button

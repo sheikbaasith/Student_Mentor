@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useCourses } from "@/hooks/useCourses";
 import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -34,7 +35,7 @@ import { Student } from "@/hooks/useStudents";
 
 const predictionStyles = {
   excelling: "bg-success/10 text-success border-success/20",
-  "on-track": "bg-accent/10 text-accent border-accent/20",
+  "on-track": "bg-primary/10 text-primary border-primary/20",
   "at-risk": "bg-danger/10 text-danger border-danger/20",
 };
 
@@ -49,6 +50,11 @@ export default function StudentDetail() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
+  const { courses } = useCourses();
+  const getCourseName = (courseId: string | null) => {
+    if (!courseId) return "Not Assigned";
+    return courses.find(c => c.id === courseId)?.name || "Not Assigned";
+  };
 
   const { data: student, isLoading } = useQuery({
     queryKey: ["student", id],
@@ -177,7 +183,7 @@ export default function StudentDetail() {
                   </div>
                   <div className="flex items-center gap-3">
                     {student.prediction === "at-risk" && (
-                      <SendNotificationDialog student={student} />
+                      <SendNotificationDialog student={student} courseName={getCourseName(student.course_id)} />
                     )}
                     <div className="text-right space-y-1">
                       <p className="text-sm text-muted-foreground">AI Confidence</p>
