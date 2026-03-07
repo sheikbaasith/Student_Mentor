@@ -36,18 +36,17 @@ const normalizePhoneNumber = (rawPhone: string) => {
   return `+${digits}`;
 };
 
-async function sendTwilioSms(to: string, body: string): Promise<boolean> {
+async function sendTwilioSms(to: string, body: string): Promise<{ sent: boolean; error?: string }> {
   const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
   const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
   const fromNumber = Deno.env.get("TWILIO_PHONE_NUMBER");
 
   if (!accountSid || !authToken || !fromNumber) {
-    console.warn("Twilio credentials not configured, skipping SMS");
-    return false;
+    return { sent: false, error: "SMS provider is not configured" };
   }
 
   const phone = normalizePhoneNumber(to);
-  if (!phone) return false;
+  if (!phone) return { sent: false, error: "Invalid phone number" };
 
   const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
   const auth = btoa(`${accountSid}:${authToken}`);
@@ -68,11 +67,10 @@ async function sendTwilioSms(to: string, body: string): Promise<boolean> {
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(`Twilio SMS failed [${response.status}]: ${errorText}`);
-    return false;
+    return { sent: false, error: `SMS send failed (${response.status}): ${errorText}` };
   }
 
-  return true;
+  return { sent: true };
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -106,7 +104,6 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const userId = authData.user.id;
-
     const { studentId, customMessage }: AtRiskNotificationRequest = await req.json();
 
     if (!studentId) {
@@ -204,6 +201,9 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
+    let emailSent = false;
+    let emailError: string | null = null;
+
     const emailResponse = await resend.emails.send({
       from: "EduTrack <onboarding@resend.dev>",
       to: [student.email],
@@ -212,13 +212,16 @@ const handler = async (req: Request): Promise<Response> => {
     });
 
     if (emailResponse.error) {
-      return new Response(JSON.stringify({ error: "Failed to send email" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
+      emailError = typeof emailResponse.error === "string"
+        ? emailResponse.error
+        : JSON.stringify(emailResponse.error);
+    } else {
+      emailSent = true;
     }
 
     let smsSent = false;
+    let smsError: string | null = null;
+
     if (student.phone) {
       const smsBody = [
         `Hi ${student.name},`,
@@ -227,13 +230,29 @@ const handler = async (req: Request): Promise<Response> => {
         `Grade: ${grade}%`,
         `Risk Status: ${prediction.toUpperCase()}`,
         `Suggestion: Improve attendance, complete assignments, and follow a daily study routine.`,
-        `${sanitizedMessage ? `Teacher message: ${customMessage?.trim()}` : ""}`,
+        `${customMessage?.trim() ? `Teacher message: ${customMessage.trim()}` : ""}`,
       ].filter(Boolean).join("\n");
 
-      smsSent = await sendTwilioSms(student.phone, smsBody);
+      const smsResult = await sendTwilioSms(student.phone, smsBody);
+      smsSent = smsResult.sent;
+      smsError = smsResult.error ?? null;
     }
 
-    const channels = ["email", ...(smsSent ? ["sms"] : [])];
+    if (!emailSent && !smsSent) {
+      return new Response(JSON.stringify({
+        error: "Failed to send notification",
+        emailError,
+        smsError,
+      }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const channels = [
+      ...(emailSent ? ["email"] : []),
+      ...(smsSent ? ["sms"] : []),
+    ];
 
     await (supabaseClient as any).from("notification_history").insert({
       teacher_id: userId,
@@ -243,13 +262,19 @@ const handler = async (req: Request): Promise<Response> => {
       current_grade: grade,
       risk_status: prediction,
       channels,
-      email_sent: true,
+      email_sent: emailSent,
       sms_sent: smsSent,
       custom_message: customMessage?.trim() || null,
       sent_at: new Date().toISOString(),
     });
 
-    return new Response(JSON.stringify({ success: true, emailSent: true, smsSent }), {
+    return new Response(JSON.stringify({
+      success: true,
+      emailSent,
+      smsSent,
+      emailError,
+      smsError,
+    }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
