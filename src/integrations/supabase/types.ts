@@ -53,6 +53,62 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_history: {
+        Row: {
+          channels: string[]
+          course_name: string | null
+          created_at: string
+          current_grade: number
+          custom_message: string | null
+          email_sent: boolean
+          id: string
+          risk_status: string
+          sent_at: string
+          sms_sent: boolean
+          student_id: string
+          student_name: string
+          teacher_id: string
+        }
+        Insert: {
+          channels?: string[]
+          course_name?: string | null
+          created_at?: string
+          current_grade?: number
+          custom_message?: string | null
+          email_sent?: boolean
+          id?: string
+          risk_status: string
+          sent_at?: string
+          sms_sent?: boolean
+          student_id: string
+          student_name: string
+          teacher_id: string
+        }
+        Update: {
+          channels?: string[]
+          course_name?: string | null
+          created_at?: string
+          current_grade?: number
+          custom_message?: string | null
+          email_sent?: boolean
+          id?: string
+          risk_status?: string
+          sent_at?: string
+          sms_sent?: boolean
+          student_id?: string
+          student_name?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_history_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
