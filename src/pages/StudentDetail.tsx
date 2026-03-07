@@ -50,6 +50,11 @@ export default function StudentDetail() {
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
   const queryClient = useQueryClient();
+  const { courses } = useCourses();
+  const getCourseName = (courseId: string | null) => {
+    if (!courseId) return "Not Assigned";
+    return courses.find(c => c.id === courseId)?.name || "Not Assigned";
+  };
 
   const { data: student, isLoading } = useQuery({
     queryKey: ["student", id],
