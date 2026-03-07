@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useCourses } from "@/hooks/useCourses";
 import { useAuth } from "@/hooks/useAuth";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -34,7 +35,7 @@ import { Student } from "@/hooks/useStudents";
 
 const predictionStyles = {
   excelling: "bg-success/10 text-success border-success/20",
-  "on-track": "bg-accent/10 text-accent border-accent/20",
+  "on-track": "bg-primary/10 text-primary border-primary/20",
   "at-risk": "bg-danger/10 text-danger border-danger/20",
 };
 
