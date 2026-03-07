@@ -19,61 +19,75 @@ function escapeHtml(unsafe: string): string {
     .replace(/'/g, "&#039;");
 }
 
+const MAX_MESSAGE_LENGTH = 1000;
+
 interface AtRiskNotificationRequest {
   studentId: string;
   customMessage?: string;
 }
 
-const MAX_MESSAGE_LENGTH = 1000;
+const normalizePhoneNumber = (rawPhone: string) => {
+  const trimmed = rawPhone.trim();
+  if (!trimmed) return "";
+  if (trimmed.startsWith("+")) return trimmed;
 
-async function sendTwilioSms(to: string, body: string): Promise<void> {
+  const digits = trimmed.replace(/\D/g, "");
+  if (digits.length === 10) return `+91${digits}`;
+  return `+${digits}`;
+};
+
+async function sendTwilioSms(to: string, body: string): Promise<{ sent: boolean; error?: string }> {
   const accountSid = Deno.env.get("TWILIO_ACCOUNT_SID");
   const authToken = Deno.env.get("TWILIO_AUTH_TOKEN");
   const fromNumber = Deno.env.get("TWILIO_PHONE_NUMBER");
 
   if (!accountSid || !authToken || !fromNumber) {
-    console.warn("Twilio credentials not configured, skipping SMS");
-    return;
+    return { sent: false, error: "SMS provider is not configured" };
   }
 
-  const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
-  const encoded = btoa(`${accountSid}:${authToken}`);
+  const phone = normalizePhoneNumber(to);
+  if (!phone) return { sent: false, error: "Invalid phone number" };
 
-  const params = new URLSearchParams();
-  params.append("To", to);
-  params.append("From", fromNumber);
-  params.append("Body", body);
+  const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+  const auth = btoa(`${accountSid}:${authToken}`);
+  const params = new URLSearchParams({
+    To: phone,
+    From: fromNumber,
+    Body: body,
+  });
 
   const response = await fetch(url, {
     method: "POST",
     headers: {
-      Authorization: `Basic ${encoded}`,
+      Authorization: `Basic ${auth}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: params.toString(),
   });
 
   if (!response.ok) {
-    const errorData = await response.text();
-    console.error(`Twilio SMS failed [${response.status}]: ${errorData}`);
-  } else {
-    console.log("Twilio SMS sent successfully");
+    const errorText = await response.text();
+    return { sent: false, error: `SMS send failed (${response.status}): ${errorText}` };
   }
+
+  return { sent: true };
 }
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
+    return new Response("ok", { headers: corsHeaders });
   }
 
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
+
+    const token = authHeader.replace("Bearer ", "");
 
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -81,60 +95,51 @@ const handler = async (req: Request): Promise<Response> => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { data: claimsData, error: claimsError } = await supabaseClient.auth.getClaims(
-      authHeader.replace("Bearer ", "")
-    );
-    if (claimsError || !claimsData?.claims) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+    const { data: authData, error: authError } = await supabaseClient.auth.getUser(token);
+    if (authError || !authData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
-    const userId = claimsData.claims.sub;
+    const userId = authData.user.id;
     const { studentId, customMessage }: AtRiskNotificationRequest = await req.json();
 
     if (!studentId) {
-      return new Response(
-        JSON.stringify({ error: "Student ID is required" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ error: "Student ID is required" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
     if (customMessage && customMessage.length > MAX_MESSAGE_LENGTH) {
-      return new Response(
-        JSON.stringify({ error: "Custom message too long" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ error: "Custom message too long" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
-    // Fetch student with course info
     const { data: student, error: studentError } = await supabaseClient
       .from("students")
-      .select("id, name, email, phone, grade, attendance, prediction, confidence, course_id")
+      .select("id, name, email, phone, grade, attendance, prediction, course_id")
       .eq("id", studentId)
       .eq("teacher_id", userId)
       .single();
 
     if (studentError || !student) {
-      return new Response(
-        JSON.stringify({ error: "Student not found or unauthorized" }),
-        { status: 404, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      return new Response(JSON.stringify({ error: "Student not found or unauthorized" }), {
+        status: 404,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
     }
 
-    // Fetch course name if assigned
     let courseName = "Not Assigned";
     if (student.course_id) {
-      const { data: course } = await supabaseClient
-        .from("courses")
-        .select("name")
-        .eq("id", student.course_id)
-        .single();
-      if (course) courseName = course.name;
+      const { data: course } = await supabaseClient.from("courses").select("name").eq("id", student.course_id).single();
+      if (course?.name) courseName = course.name;
     }
 
-    // Get teacher name
     const { data: profile } = await supabaseClient
       .from("profiles")
       .select("full_name")
@@ -149,15 +154,12 @@ const handler = async (req: Request): Promise<Response> => {
     const sanitizedMessage = customMessage ? escapeHtml(customMessage.trim()) : null;
     const safeCourseName = escapeHtml(courseName);
 
-    console.log(`Sending at-risk notification to ${student.email} for student ${student.name}`);
-
-    // Build suggestions based on performance
     const suggestions: string[] = [];
-    if (attendance < 80) suggestions.push("Attend all scheduled classes regularly to improve attendance rate");
-    if (grade < 70) suggestions.push("Schedule extra tutoring sessions and seek help from teachers");
-    suggestions.push("Review and complete all pending assignments on time");
-    suggestions.push("Create a consistent daily study routine at home");
-    suggestions.push("Contact your teacher to discuss a personalized improvement plan");
+    if (attendance < 80) suggestions.push("Attend classes regularly and be punctual.");
+    if (grade < 70) suggestions.push("Schedule extra study sessions and ask for guidance.");
+    suggestions.push("Complete pending assignments on time.");
+    suggestions.push("Follow a daily study plan and revise consistently.");
+    suggestions.push("Meet your teacher to discuss an improvement strategy.");
 
     const emailHtml = `
       <!DOCTYPE html>
@@ -165,109 +167,123 @@ const handler = async (req: Request): Promise<Response> => {
         <head>
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Academic Performance Alert - EduTrack</title>
+          <title>Academic Alert - EduTrack</title>
         </head>
         <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%); padding: 30px; border-radius: 10px 10px 0 0; text-align: center;">
-            <h1 style="color: white; margin: 0; font-size: 24px;">🎓 EduTrack - Academic Performance Alert</h1>
+            <h1 style="color: white; margin: 0; font-size: 24px;">EduTrack - Academic Performance Alert</h1>
           </div>
-          
           <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 10px 10px;">
-            <p style="font-size: 16px; margin-bottom: 20px;">Dear <strong>${studentName}</strong>,</p>
-            
-            <p style="font-size: 15px; margin-bottom: 20px;">
-              We hope this message finds you well. We are reaching out because our AI-powered academic tracking system has identified that your current performance needs attention. Please don't be discouraged — this is an opportunity to improve, and we're here to support you every step of the way.
-            </p>
-            
+            <p>Dear <strong>${studentName}</strong>,</p>
+            <p>We are reaching out with support because your current performance is below expected level and you are currently marked at risk in the AI prediction system.</p>
             <div style="background: #fff3f3; border-left: 4px solid #ef4444; padding: 15px 20px; margin: 20px 0; border-radius: 4px;">
-              <h3 style="margin: 0 0 10px 0; color: #dc2626; font-size: 16px;">⚠️ Current Performance Summary</h3>
-              <p style="margin: 5px 0;"><strong>Student Name:</strong> ${studentName}</p>
-              <p style="margin: 5px 0;"><strong>Course:</strong> ${safeCourseName}</p>
-              <p style="margin: 5px 0;"><strong>Current Grade:</strong> ${grade}%</p>
-              <p style="margin: 5px 0;"><strong>Attendance Rate:</strong> ${attendance}%</p>
-              <p style="margin: 5px 0;"><strong>Risk Status:</strong> <span style="color: #dc2626; font-weight: bold; text-transform: uppercase;">${prediction}</span></p>
+              <p><strong>Student Name:</strong> ${studentName}</p>
+              <p><strong>Course Name:</strong> ${safeCourseName}</p>
+              <p><strong>Current Grade:</strong> ${grade}%</p>
+              <p><strong>Risk Status:</strong> ${prediction.toUpperCase()}</p>
             </div>
-            
             ${sanitizedMessage ? `
-            <div style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 15px 20px; margin: 20px 0; border-radius: 4px;">
-              <h3 style="margin: 0 0 10px 0; color: #1e40af; font-size: 16px;">💬 Message from ${teacherName}</h3>
-              <p style="margin: 0;">${sanitizedMessage}</p>
-            </div>
-            ` : ''}
-            
+              <div style="background: #f0f9ff; border-left: 4px solid #3b82f6; padding: 15px 20px; margin: 20px 0; border-radius: 4px;">
+                <h3 style="margin: 0 0 10px 0; color: #1e40af; font-size: 16px;">Message from ${teacherName}</h3>
+                <p style="margin: 0;">${sanitizedMessage}</p>
+              </div>
+            ` : ""}
             <div style="background: #f0fdf4; border-left: 4px solid #22c55e; padding: 15px 20px; margin: 20px 0; border-radius: 4px;">
-              <h3 style="margin: 0 0 10px 0; color: #15803d; font-size: 16px;">💡 Suggestions to Improve</h3>
+              <h3 style="margin: 0 0 10px 0; color: #15803d; font-size: 16px;">Suggestions to Improve Performance</h3>
               <ul style="padding-left: 20px; margin: 0;">
-                ${suggestions.map(s => `<li style="margin-bottom: 8px;">${s}</li>`).join('')}
+                ${suggestions.map((s) => `<li style="margin-bottom: 8px;">${s}</li>`).join("")}
               </ul>
             </div>
-            
-            <p style="font-size: 15px; margin-top: 25px;">
-              We believe in your potential and know that with the right effort and support, you can significantly improve your academic performance. Don't hesitate to reach out to your teacher for guidance.
-            </p>
-            
-            <p style="font-size: 15px; margin-top: 20px;">
-              Best regards,<br>
-              <strong>${teacherName}</strong><br>
-              <span style="color: #666;">EduTrack - AI-Powered Student Analytics</span>
-            </p>
-          </div>
-          
-          <div style="text-align: center; padding: 20px; color: #888; font-size: 12px;">
-            <p>This is an automated notification from the EduTrack Performance Prediction System.</p>
+            <p>We believe in your potential and encourage you to take this as a positive step toward improvement.</p>
+            <p>Best regards,<br><strong>${teacherName}</strong><br><span style="color: #666;">EduTrack</span></p>
           </div>
         </body>
       </html>
     `;
 
-    // Send email
+    let emailSent = false;
+    let emailError: string | null = null;
+
     const emailResponse = await resend.emails.send({
       from: "EduTrack <onboarding@resend.dev>",
       to: [student.email],
-      subject: `Academic Performance Alert for ${student.name} - ${courseName}`,
+      subject: `Academic Performance Alert for ${student.name}`,
       html: emailHtml,
     });
 
-    console.log("Resend response:", JSON.stringify(emailResponse));
-
     if (emailResponse.error) {
-      console.error("Resend error:", emailResponse.error);
-      return new Response(
-        JSON.stringify({ error: "Failed to send email" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+      emailError = typeof emailResponse.error === "string"
+        ? emailResponse.error
+        : JSON.stringify(emailResponse.error);
+    } else {
+      emailSent = true;
     }
 
-    // Send SMS if phone number available
     let smsSent = false;
-    if (student.phone) {
-      const smsBody = `Hi ${student.name}, this is an academic alert from EduTrack.\n\n` +
-        `Course: ${courseName}\n` +
-        `Current Grade: ${grade}%\n` +
-        `Attendance: ${attendance}%\n` +
-        `Status: ${prediction.toUpperCase()}\n\n` +
-        `Your current grade is below the expected level. Please focus on improving your attendance and study habits.\n\n` +
-        `Contact your teacher ${profile?.full_name || ''} for a personalized improvement plan.\n\n` +
-        `- EduTrack`;
+    let smsError: string | null = null;
 
-      try {
-        await sendTwilioSms(student.phone, smsBody);
-        smsSent = true;
-      } catch (smsError) {
-        console.error("SMS sending failed:", smsError);
-      }
+    if (student.phone) {
+      const smsBody = [
+        `Hi ${student.name},`,
+        `You are marked at risk in EduTrack.`,
+        `Course: ${courseName}`,
+        `Grade: ${grade}%`,
+        `Risk Status: ${prediction.toUpperCase()}`,
+        `Suggestion: Improve attendance, complete assignments, and follow a daily study routine.`,
+        `${customMessage?.trim() ? `Teacher message: ${customMessage.trim()}` : ""}`,
+      ].filter(Boolean).join("\n");
+
+      const smsResult = await sendTwilioSms(student.phone, smsBody);
+      smsSent = smsResult.sent;
+      smsError = smsResult.error ?? null;
     }
 
-    return new Response(JSON.stringify({ success: true, emailSent: true, smsSent }), {
+    if (!emailSent && !smsSent) {
+      return new Response(JSON.stringify({
+        error: "Failed to send notification",
+        emailError,
+        smsError,
+      }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const channels = [
+      ...(emailSent ? ["email"] : []),
+      ...(smsSent ? ["sms"] : []),
+    ];
+
+    await (supabaseClient as any).from("notification_history").insert({
+      teacher_id: userId,
+      student_id: student.id,
+      student_name: student.name,
+      course_name: courseName,
+      current_grade: grade,
+      risk_status: prediction,
+      channels,
+      email_sent: emailSent,
+      sms_sent: smsSent,
+      custom_message: customMessage?.trim() || null,
+      sent_at: new Date().toISOString(),
+    });
+
+    return new Response(JSON.stringify({
+      success: true,
+      emailSent,
+      smsSent,
+      emailError,
+      smsError,
+    }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (error: any) {
     console.error("Error sending at-risk notification:", error);
-    return new Response(
-      JSON.stringify({ error: "An unexpected error occurred" }),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
-    );
+    return new Response(JSON.stringify({ error: error?.message || "An unexpected error occurred" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
   }
 };
 

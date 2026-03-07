@@ -46,9 +46,15 @@ export function SendNotificationDialog({ student, teacherName, courseName }: Sen
 
       setSent(true);
       setResult(data || {});
+      const emailSent = Boolean(data?.emailSent);
+      const smsSent = Boolean(data?.smsSent);
+
       toast({
-        title: "Notification Sent",
-        description: `Alert sent to ${student.email}${student.phone ? ' and phone' : ''}`,
+        title: emailSent && smsSent ? "Notification Sent" : "Notification Partially Sent",
+        description: emailSent && smsSent
+          ? `Alert sent to ${student.email}${student.phone ? " and phone" : ""}`
+          : `Sent via ${[emailSent ? "email" : null, smsSent ? "SMS" : null].filter(Boolean).join(" + ")}`,
+        variant: emailSent || smsSent ? "default" : "destructive",
       });
 
       setTimeout(() => {
