@@ -41,7 +41,7 @@ interface StudentTableProps {
 
 const predictionStyles = {
   "excelling": "bg-success/10 text-success border-success/20 hover:bg-success/20",
-  "on-track": "bg-accent/10 text-accent border-accent/20 hover:bg-accent/20",
+  "on-track": "bg-primary/10 text-primary border-primary/20 hover:bg-primary/20",
   "at-risk": "bg-danger/10 text-danger border-danger/20 hover:bg-danger/20",
 };
 
