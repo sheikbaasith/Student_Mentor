@@ -27,6 +27,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
       <AuthProvider>
+        <StudentAuthProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -34,6 +35,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/student-dashboard" element={<StudentDashboard />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/students" element={<Students />} />
               <Route path="/analytics" element={<Analytics />} />
@@ -48,7 +50,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
-        </TooltipProvider>
+        </StudentAuthProvider>
       </AuthProvider>
     </ThemeProvider>
   </QueryClientProvider>
