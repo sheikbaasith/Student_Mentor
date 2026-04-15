@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Loader2, Settings as SettingsIcon, User, Bell, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ChangePasswordDialog } from "@/components/settings/ChangePasswordDialog";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Settings() {
   const { user, loading: authLoading, signOut } = useAuth();
@@ -19,12 +20,30 @@ export default function Settings() {
   const { toast } = useToast();
   const [notifications, setNotifications] = useState(true);
   const [emailAlerts, setEmailAlerts] = useState(true);
+  const [profileName, setProfileName] = useState("");
+  const [department, setDepartment] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate("/auth");
-    }
+    if (!authLoading && !user) navigate("/auth");
   }, [user, authLoading, navigate]);
+
+  // Load profile
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, department")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (data) {
+        setProfileName(data.full_name || "");
+        setDepartment(data.department || "");
+      }
+    };
+    load();
+  }, [user]);
 
   if (authLoading) {
     return (
@@ -41,11 +60,19 @@ export default function Settings() {
     navigate("/auth");
   };
 
-  const handleSave = () => {
-    toast({
-      title: "Settings saved",
-      description: "Your preferences have been updated.",
-    });
+  const handleSave = async () => {
+    setIsSaving(true);
+    const { error } = await supabase
+      .from("profiles")
+      .update({ full_name: profileName, department })
+      .eq("user_id", user.id);
+
+    if (error) {
+      toast({ title: "Error", description: "Failed to save profile.", variant: "destructive" });
+    } else {
+      toast({ title: "Settings saved", description: "Your profile has been updated." });
+    }
+    setIsSaving(false);
   };
 
   return (
@@ -60,37 +87,35 @@ export default function Settings() {
                 <SettingsIcon className="h-8 w-8 text-primary" />
                 Settings
               </h1>
-              <p className="text-muted-foreground">
-                Manage your account and application preferences
-              </p>
+              <p className="text-muted-foreground">Manage your account and application preferences</p>
             </div>
 
             {/* Profile Settings */}
             <Card className="card-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  Profile
-                </CardTitle>
-                <CardDescription>Your account information</CardDescription>
+                <CardTitle className="flex items-center gap-2"><User className="h-5 w-5" /> Profile</CardTitle>
+                <CardDescription>Update your name and department</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Full Name</Label>
+                    <Input value={profileName} onChange={(e) => setProfileName(e.target.value)} placeholder="Your name" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Department</Label>
+                    <Input value={department} onChange={(e) => setDepartment(e.target.value)} placeholder="e.g. Computer Science" />
+                  </div>
+                </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <Label>Email</Label>
                     <Input value={user.email || ""} disabled />
                   </div>
                   <div className="space-y-2">
-                    <Label>User ID</Label>
-                    <Input value={user.id.slice(0, 8) + "..."} disabled />
+                    <Label>Account Created</Label>
+                    <Input value={new Date(user.created_at).toLocaleDateString()} disabled />
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label>Account Created</Label>
-                  <Input
-                    value={new Date(user.created_at).toLocaleDateString()}
-                    disabled
-                  />
                 </div>
               </CardContent>
             </Card>
@@ -98,37 +123,24 @@ export default function Settings() {
             {/* Notification Settings */}
             <Card className="card-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Bell className="h-5 w-5" />
-                  Notifications
-                </CardTitle>
+                <CardTitle className="flex items-center gap-2"><Bell className="h-5 w-5" /> Notifications</CardTitle>
                 <CardDescription>Configure how you receive alerts</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Push Notifications</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Receive notifications about at-risk students
-                    </p>
+                    <p className="text-sm text-muted-foreground">Receive notifications about at-risk students</p>
                   </div>
-                  <Switch
-                    checked={notifications}
-                    onCheckedChange={setNotifications}
-                  />
+                  <Switch checked={notifications} onCheckedChange={setNotifications} />
                 </div>
                 <Separator />
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Email Alerts</Label>
-                    <p className="text-sm text-muted-foreground">
-                      Get weekly performance summaries via email
-                    </p>
+                    <p className="text-sm text-muted-foreground">Get weekly performance summaries via email</p>
                   </div>
-                  <Switch
-                    checked={emailAlerts}
-                    onCheckedChange={setEmailAlerts}
-                  />
+                  <Switch checked={emailAlerts} onCheckedChange={setEmailAlerts} />
                 </div>
               </CardContent>
             </Card>
@@ -136,29 +148,21 @@ export default function Settings() {
             {/* Security Settings */}
             <Card className="card-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  Security
-                </CardTitle>
+                <CardTitle className="flex items-center gap-2"><Shield className="h-5 w-5" /> Security</CardTitle>
                 <CardDescription>Manage your account security</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <ChangePasswordDialog />
                 <Separator />
                 <div className="pt-2">
-                  <Button
-                    variant="destructive"
-                    onClick={handleSignOut}
-                    className="w-full sm:w-auto"
-                  >
-                    Sign Out
-                  </Button>
+                  <Button variant="destructive" onClick={handleSignOut} className="w-full sm:w-auto">Sign Out</Button>
                 </div>
               </CardContent>
             </Card>
 
             <div className="flex justify-end">
-              <Button onClick={handleSave} className="gradient-primary text-primary-foreground">
+              <Button onClick={handleSave} className="gradient-primary text-primary-foreground" disabled={isSaving}>
+                {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Save Changes
               </Button>
             </div>
